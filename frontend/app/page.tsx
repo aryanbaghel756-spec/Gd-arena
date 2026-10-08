@@ -10,6 +10,7 @@ import { HowItWorks } from '@/components/landing/HowItWorks';
 import { RoomSetup } from '@/components/setup/RoomSetup';
 import { LiveArena } from '@/components/arena/LiveArena';
 import { ReportView } from '@/components/report/ReportView';
+import { PipelineArchitecture } from '@/components/pipeline/PipelineArchitecture';
 import { useGDSimulator } from '@/hooks/useGDSimulator';
 
 export default function Home() {
@@ -50,17 +51,9 @@ export default function Home() {
     handleToggleSatisfaction,
   } = useGDSimulator();
 
-  // Scroll smoothly to "how it works"
+  // Navigate to pipeline & architecture view
   const scrollToHowItWorks = () => {
-    const el = document.getElementById('how-it-works');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      setScreen('hero');
-      setTimeout(() => {
-        document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    }
+    setScreen('pipeline');
   };
 
   const isSpeakingCurrently = Boolean(activeSpeakerId || isHoldingSpeak || isMicOn);
@@ -181,6 +174,22 @@ export default function Home() {
                 transcripts={transcripts}
                 topicTitle={selectedTopic.title}
                 onPractiseAgain={() => setScreen('setup')}
+              />
+            </motion.div>
+          )}
+
+          {/* 5. HOW IT WORKS / PIPELINE & ARCHITECTURE VIEW */}
+          {screen === 'pipeline' && (
+            <motion.div
+              key="pipeline-screen"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+            >
+              <PipelineArchitecture
+                onBack={() => setScreen('hero')}
+                onStartGD={() => setScreen('setup')}
               />
             </motion.div>
           )}

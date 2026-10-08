@@ -5,8 +5,8 @@ import { Bot, ShieldAlert, Sparkles, Volume2, Mic, Radio } from 'lucide-react';
 import { HexButton } from '../ui/HexButton';
 
 interface HeaderProps {
-  currentScreen: 'hero' | 'setup' | 'arena' | 'report';
-  onNavigate: (screen: 'hero' | 'setup' | 'arena' | 'report') => void;
+  currentScreen: 'hero' | 'setup' | 'arena' | 'report' | 'pipeline';
+  onNavigate: (screen: 'hero' | 'setup' | 'arena' | 'report' | 'pipeline') => void;
   isLiveDiscussion?: boolean;
 }
 
@@ -129,6 +129,14 @@ export function Header({ currentScreen, onNavigate, isLiveDiscussion = false }: 
                 }`}
               >
                 REPORT
+              </button>
+              <button
+                onClick={() => onNavigate('pipeline')}
+                className={`px-3 py-1.5 text-xs font-mono rounded tracking-wider transition-colors ${
+                  currentScreen === 'pipeline' ? 'text-[#ffc400] bg-amber-500/10 border border-amber-500/30' : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                PIPELINE
               </button>
             </nav>
           )}

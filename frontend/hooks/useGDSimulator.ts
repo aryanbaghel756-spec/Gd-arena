@@ -19,7 +19,7 @@ import {
   VERIFIED_TOPIC_FACTS
 } from '@/data/mockData';
 
-export type ScreenState = 'hero' | 'setup' | 'arena' | 'report';
+export type ScreenState = 'hero' | 'setup' | 'arena' | 'report' | 'pipeline';
 
 const API_BASE = typeof window !== 'undefined'
   ? (window.location.port === '3000' || window.location.port === '5173' ? 'http://localhost:8000' : '')
