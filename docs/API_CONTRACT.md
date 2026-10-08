@@ -94,6 +94,50 @@ Fetches the curated catalog of group discussion topics.
 
 ---
 
+### 3.2.1 `POST /api/topics/custom`
+Allows students to provide their own custom topic. Dynamically deduces analytical domains and grounds the room in verifiable empirical debate pillars.
+
+- **Method**: `POST`
+- **Request Body**:
+```json
+{
+  "title": "75% Mandatory Attendance: Enhances Discipline or Restricts Learning?",
+  "category": "Education Policy",
+  "difficulty": "Medium"
+}
+```
+- **Response**: `201 Created`
+```json
+{
+  "id": "75--mandatory-attendance--enhances-discipline-or-restricts-learning-",
+  "title": "75% Mandatory Attendance: Enhances Discipline or Restricts Learning?",
+  "category": "Education Policy",
+  "difficulty": "Medium",
+  "suggested_duration_sec": 300,
+  "context": "Debate the multifaceted implications of '75% Mandatory Attendance: Enhances Discipline or Restricts Learning?', balancing practical feasibility against broader stakeholder impact.",
+  "format": "custom",
+  "core_domains": [
+    "Pedagogical Effectiveness",
+    "Student Autonomy & Discipline",
+    "Campus Infrastructure ROI"
+  ],
+  "verified_data_points": [
+    {
+      "claim": "Multi-stakeholder impact of 75% Mandatory Attendance",
+      "evidence": "In policy analysis on '75% Mandatory Attendance', top debaters differentiate immediate individual preferences from aggregate structural outcomes, balancing incentives against regulatory guardrails.",
+      "source": "Placement GD Assessment Standards"
+    },
+    {
+      "claim": "Root cause vs symptom distinction",
+      "evidence": "Case studies demonstrate systemic interventions yield 3x higher long-term compliance compared to superficial punitive mandates.",
+      "source": "Organizational Policy & Behavioral Economics Review"
+    }
+  ]
+}
+```
+
+---
+
 ### 3.3 `POST /api/rooms`
 Creates a new discussion room with a specified topic, panel size, and language. Initializes the AI participants and moderator.
 

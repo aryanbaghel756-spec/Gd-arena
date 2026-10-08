@@ -47,6 +47,22 @@ class FactsResponse(BaseModel):
     verified_data_points: List[FactDataPoint]
     common_myths_debunked: List[MythDebunk]
 
+class CustomTopicRequest(BaseModel):
+    title: str = Field(min_length=3, description="Custom debate topic or scenario")
+    category: Optional[str] = "Custom Debate"
+    difficulty: Optional[Literal["Easy", "Medium", "Hard"]] = "Medium"
+
+class CustomTopicResponse(BaseModel):
+    id: str
+    title: str
+    category: str
+    difficulty: str
+    suggested_duration_sec: int
+    context: str
+    format: str = "custom"
+    core_domains: List[str]
+    verified_data_points: List[FactDataPoint]
+
 
 # --- Voice & Participants ---
 class VoiceHint(BaseModel):

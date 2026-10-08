@@ -300,3 +300,28 @@ def test_what_you_could_have_said_in_report():
     assert "suggested_response" in item
     assert "missed_angle" in item
 
+def test_create_custom_topic_endpoint():
+    res = client.post("/api/topics/custom", json={
+        "title": "75% Mandatory Attendance: Enhances Discipline or Restricts Learning?",
+        "category": "Education Policy",
+        "difficulty": "Medium"
+    })
+    assert res.status_code == 201
+    data = res.json()
+    assert data["title"] == "75% Mandatory Attendance: Enhances Discipline or Restricts Learning?"
+    assert data["format"] == "custom"
+    assert "core_domains" in data
+    assert any("Pedagogical" in d for d in data["core_domains"])
+    assert len(data["verified_data_points"]) >= 2
+
+    # Check that creating room with this custom topic works
+    room_res = client.post("/api/rooms", json={
+        "topic": data["title"],
+        "panel_size": 3,
+        "format": "standard"
+    })
+    assert room_res.status_code == 201
+    room_id = room_res.json()["room_id"]
+    t1 = client.post(f"/api/rooms/{room_id}/next", json={}).json()
+    assert t1["turn"] is not None
+

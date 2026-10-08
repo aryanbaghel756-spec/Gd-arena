@@ -19,10 +19,12 @@ from .models import (
     SatisfactionRequest,
     SatisfactionResponse,
     FactsResponse,
-    StudentProfileResponse
+    StudentProfileResponse,
+    CustomTopicRequest,
+    CustomTopicResponse
 )
 from .store import room_store
-from .mock_engine import get_mock_topics, advance_mock_turn, generate_mock_report
+from .mock_engine import get_mock_topics, register_custom_topic, advance_mock_turn, generate_mock_report
 from .moderator import advance_room_turn
 from .report_generator import generate_gd_report
 from .facts_db import get_facts_for_topic
@@ -119,6 +121,26 @@ async def health_check():
 @app.get("/api/topics", response_model=TopicsResponse)
 async def list_topics():
     return get_mock_topics()
+
+@app.post("/api/topics/custom", response_model=CustomTopicResponse, status_code=status.HTTP_201_CREATED)
+async def create_custom_topic(req: CustomTopicRequest):
+    topic_obj = register_custom_topic(
+        title=req.title,
+        category=req.category or "Custom Debate",
+        difficulty=req.difficulty or "Medium"
+    )
+    facts = get_facts_for_topic(req.title)
+    return CustomTopicResponse(
+        id=topic_obj.id,
+        title=topic_obj.title,
+        category=topic_obj.category,
+        difficulty=topic_obj.difficulty,
+        suggested_duration_sec=topic_obj.suggested_duration_sec,
+        context=topic_obj.context,
+        format="custom",
+        core_domains=facts.get("core_domains", []),
+        verified_data_points=facts.get("verified_data_points", [])
+    )
 
 @app.post("/api/rooms", response_model=CreateRoomResponse, status_code=status.HTTP_201_CREATED)
 async def create_room(req: CreateRoomRequest):

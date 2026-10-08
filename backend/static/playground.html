@@ -101,7 +101,12 @@
         <option value="Abstract: Silence is More Eloquent Than Words">Abstract: Silence is More Eloquent Than Words</option>
         <option value="Controversial: Should Maximum Personal Wealth Be Capped at $1 Billion?">Controversial: Wealth Cap at $1B</option>
         <option value="Remote Work vs. Return to Office: The Future of Collaboration">Remote Work vs. Return to Office</option>
+        <option value="__custom__">✍️ + Custom Topic (Type your own)...</option>
       </select>
+    </div>
+    <div class="control-group" id="customTopicGroup" style="display: none; flex: 2;">
+      <label>Custom Topic Title</label>
+      <input type="text" id="customTopicInput" placeholder="e.g. 75% College Attendance: Mandatory or Counterproductive?" style="background: var(--card-bg); border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; color: #fff; font-size: 0.9rem;" />
     </div>
     <div class="control-group" style="max-width: 140px;">
       <label>Language</label>
@@ -280,9 +285,29 @@
     box.scrollTop = box.scrollHeight;
   }
 
+  // Custom Topic Toggle
+  document.getElementById('topicSelect').addEventListener('change', (e) => {
+    const customGroup = document.getElementById('customTopicGroup');
+    if (e.target.value === '__custom__') {
+      customGroup.style.display = 'flex';
+      document.getElementById('customTopicInput').focus();
+    } else {
+      customGroup.style.display = 'none';
+    }
+  });
+
   // Start Discussion Room
   document.getElementById('startBtn').addEventListener('click', async () => {
-    const topic = document.getElementById('topicSelect').value;
+    let topic = document.getElementById('topicSelect').value;
+    if (topic === '__custom__') {
+      const customVal = document.getElementById('customTopicInput').value.trim();
+      if (!customVal) {
+        alert('Please enter your custom topic title before starting!');
+        return;
+      }
+      topic = customVal;
+    }
+
     const language = document.getElementById('langSelect').value;
     const format = document.getElementById('formatSelect').value;
     const panel_size = parseInt(document.getElementById('panelSizeSelect').value);

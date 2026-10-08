@@ -62,6 +62,22 @@ MOCK_TOPICS = [
 def get_mock_topics() -> TopicsResponse:
     return TopicsResponse(topics=MOCK_TOPICS)
 
+def register_custom_topic(title: str, category: str = "Custom Debate", difficulty: str = "Medium") -> Topic:
+    slug = "".join(c if c.isalnum() else "-" for c in title.lower()).strip("-")
+    facts = get_facts_for_topic(title)
+    new_topic = Topic(
+        id=slug,
+        title=title,
+        category=category,
+        difficulty=difficulty,
+        suggested_duration_sec=facts.get("suggested_duration_sec", 300),
+        context=facts.get("context", f"Custom debate scenario for {title}"),
+        format="custom"
+    )
+    if not any(t.id == slug for t in MOCK_TOPICS):
+        MOCK_TOPICS.append(new_topic)
+    return new_topic
+
 def advance_mock_turn(
     room: RoomState,
     student_text: Optional[str] = None,
