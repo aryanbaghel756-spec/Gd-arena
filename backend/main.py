@@ -116,12 +116,16 @@ async def create_room(req: CreateRoomRequest):
         topic=req.topic,
         panel_size=req.panel_size,
         language=req.language,
+        format=req.format,
+        patience_sec=req.patience_sec,
         student_id=req.student_id or "student_default"
     )
     return CreateRoomResponse(
         room_id=room.room_id,
         topic=room.topic,
         language=room.language,
+        format=room.format,
+        patience_sec=room.patience_sec,
         duration_sec=room.duration_sec,
         created_at_ms=room.created_at_ms,
         moderator=room.moderator,

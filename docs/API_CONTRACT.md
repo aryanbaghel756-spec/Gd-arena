@@ -103,12 +103,18 @@ Creates a new discussion room with a specified topic, panel size, and language. 
 {
   "topic": "Will AI Create More Jobs Than It Destroys?",
   "panel_size": 4,
-  "language": "en"
+  "language": "en",
+  "format": "standard",
+  "patience_sec": 5,
+  "student_id": "student_default"
 }
 ```
 *Constraints*:
 - `panel_size`: integer between `3` and `5` (inclusive).
 - `language`: `"en"` or `"hinglish"`.
+- `format` (optional): `"standard"`, `"case_based"`, `"abstract"`, `"controversial"`, `"fishbowl"` (default: `"standard"`).
+- `patience_sec` (optional): integer between `2` and `15` (default: `5`).
+- `student_id` (optional): string identifier for student memory and learning roadmap persistence (default: `"student_default"`).
 
 - **Response**: `201 Created`
 ```json
@@ -116,8 +122,11 @@ Creates a new discussion room with a specified topic, panel size, and language. 
   "room_id": "room_a1b2c3d4",
   "topic": "Will AI Create More Jobs Than It Destroys?",
   "language": "en",
+  "format": "standard",
+  "patience_sec": 5,
   "duration_sec": 300,
   "created_at_ms": 1728374000000,
+  "student_id": "student_default",
   "moderator": {
     "id": "moderator",
     "name": "Dr. Verma",
@@ -455,6 +464,15 @@ Concludes the discussion and generates the performance report.
         "turn_id": "turn_12",
         "text": "In conclusion, AI will transform employment rather than eliminate it, provided governments invest heavily in reskilling."
       }
+    }
+  ],
+  "what_you_could_have_said": [
+    {
+      "turn_id": "turn_3",
+      "speaker_name": "Kabir",
+      "trigger_text": "While long-term trends look positive, what about transitional unemployment?",
+      "suggested_response": "I acknowledge Kabir's point on friction, but according to Nordic active labor studies, transition voucher programs reduce frictional unemployment duration by 45%.",
+      "missed_angle": "Pivoting from obstacle to proactive policy solution with empirical evidence"
     }
   ]
 }

@@ -12,6 +12,8 @@ class RoomState:
         topic: str,
         panel_size: int,
         language: str = "en",
+        format: str = "standard",
+        patience_sec: int = 5,
         duration_sec: int = 300,
         student_id: str = "student_default"
     ):
@@ -20,6 +22,8 @@ class RoomState:
         self.topic = topic
         self.panel_size = panel_size
         self.language = language
+        self.format = format
+        self.patience_sec = patience_sec
         self.duration_sec = duration_sec
         self.created_at_ms = int(time.time() * 1000)
         self.phase: str = "opening"
@@ -32,13 +36,13 @@ class RoomState:
         self.cached_report: Optional[EndReportResponse] = None
         self.is_satisfied: bool = False
         self.satisfaction_notes: str = ""
+        self.in_fishbowl_circle: bool = (format != "fishbowl")  # If fishbowl, starts outside circle
 
     def get_remaining_sec(self) -> int:
         elapsed = (time.time() * 1000 - self.created_at_ms) / 1000.0
         remaining = int(self.duration_sec - elapsed)
-        # If student is probing and not yet satisfied, we maintain discussion active
         if remaining <= 0 and not self.is_satisfied:
-            return 30  # Dynamic grace period allowing student satisfaction
+            return 30
         return max(0, remaining)
 
     def add_turn(
@@ -70,10 +74,10 @@ class RoomState:
         if not is_ai:
             self.last_student_turn_ms = turn_time
             self.consecutive_ai_turns = 0
+            self.in_fishbowl_circle = True
         else:
             self.consecutive_ai_turns += 1
 
-        # Persist turn in SQLite
         try:
             conn = get_connection()
             conn.execute("""
@@ -107,6 +111,8 @@ class RoomState:
             room_id=self.room_id,
             topic=self.topic,
             language=self.language,
+            format=self.format,
+            patience_sec=self.patience_sec,
             phase=self.phase,  # type: ignore
             duration_sec=self.duration_sec,
             remaining_sec=self.get_remaining_sec(),
@@ -125,6 +131,8 @@ class RoomStore:
         topic: str,
         panel_size: int = 4,
         language: str = "en",
+        format: str = "standard",
+        patience_sec: int = 5,
         student_id: str = "student_default"
     ) -> RoomState:
         room_id = f"room_{uuid.uuid4().hex[:8]}"
@@ -133,11 +141,12 @@ class RoomStore:
             topic=topic,
             panel_size=panel_size,
             language=language,
+            format=format,
+            patience_sec=patience_sec,
             student_id=student_id
         )
         self._rooms[room_id] = room
 
-        # Persist room in SQLite
         try:
             conn = get_connection()
             conn.execute("""

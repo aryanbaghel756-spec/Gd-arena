@@ -77,5 +77,14 @@
         "text": "In conclusion, AI will transform employment rather than eliminate it, provided governments invest heavily in reskilling."
       }
     }
+  ],
+  "what_you_could_have_said": [
+    {
+      "turn_id": "turn_3",
+      "speaker_name": "Kabir",
+      "trigger_text": "While long-term trends look positive, what about transitional unemployment for workers?",
+      "suggested_response": "I acknowledge Kabir's point on friction, but according to Nordic active labor studies, transition voucher programs reduce frictional unemployment duration by 45%.",
+      "missed_angle": "Pivoting from obstacle to proactive policy solution with empirical evidence"
+    }
   ]
 }

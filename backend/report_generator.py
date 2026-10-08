@@ -1,10 +1,13 @@
 import json
 import logging
 from typing import Dict, List, Any, Optional
-from .models import EndReportResponse, Metrics, CriterionScore, QuoteRef, TranscriptTurn
+from .models import (
+    EndReportResponse, Metrics, CriterionScore, QuoteRef, TranscriptTurn, MissedOpportunity
+)
 from .store import RoomState
 from .llm.router import llm_router
 from .database import get_or_create_student, update_student_progress, get_connection
+from .facts_db import get_facts_for_topic
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +19,51 @@ CRITERIA_LIST = [
     "Handling interruptions",
     "Ending strongly"
 ]
+
+def generate_missed_opportunities_replay(
+    transcript: List[TranscriptTurn],
+    topic: str
+) -> List[MissedOpportunity]:
+    """
+    Identifies pivotal turns where an AI participant made an opening that the student could have capitalized on,
+    providing high-impact placement-grade suggested phrasing.
+    """
+    facts = get_facts_for_topic(topic)
+    data_points = facts.get("verified_data_points", [])
+    
+    missed: List[MissedOpportunity] = []
+    
+    # Look for turns by critic/dominator/analyst where student didn't immediately follow up
+    for i, t in enumerate(transcript):
+        if t.is_ai and t.speaker_id in ["kabir", "rohan", "aarav"] and len(missed) < 3:
+            # Check if student spoke on the very next turn
+            student_followed = (i + 1 < len(transcript) and transcript[i + 1].role == "student")
+            if not student_followed or t.speaker_id == "kabir":
+                evidence_text = data_points[len(missed) % len(data_points)]["evidence"] if data_points else "economic data"
+                missed.append(MissedOpportunity(
+                    turn_id=t.id,
+                    speaker_name=t.speaker_name,
+                    trigger_text=t.text[:100] + ("..." if len(t.text) > 100 else ""),
+                    suggested_response=(
+                        f"I hear {t.speaker_name}'s concern, but according to {evidence_text}, "
+                        "the transition can be actively stabilized through targeted public-private partnerships."
+                    ),
+                    missed_angle="Pivoting from obstacle to proactive policy solution with empirical evidence"
+                ))
+
+    # Fallback if no specific turns caught
+    if not missed and len(transcript) > 1:
+        t = transcript[1]
+        missed.append(MissedOpportunity(
+            turn_id=t.id,
+            speaker_name=t.speaker_name,
+            trigger_text=t.text[:90],
+            suggested_response="Building directly on that, we must separate short-term adjustment shocks from structural GDP growth.",
+            missed_angle="Synthesizing macroeconomic perspective"
+        ))
+
+    return missed
+
 
 def validate_and_sanitize_quotes(
     raw_criteria: List[Dict[str, Any]],
@@ -117,7 +165,7 @@ async def generate_gd_report(room: RoomState) -> EndReportResponse:
     llm_report = await llm_router.generate_report_scores(room.topic, transcript_dicts, student_profile)
 
     raw_criteria: List[Dict[str, Any]] = []
-    overall_score = 75
+    overall_score = 78
     summary = (
         "Overall constructive participation. You engaged with the discussion prompts "
         "and contributed perspective grounded in practical logic."
@@ -140,6 +188,9 @@ async def generate_gd_report(room: RoomState) -> EndReportResponse:
     computed_overall = int(avg_score * 20)
     final_score = int((overall_score + computed_overall) / 2)
 
+    # 4. Generate "What You Could Have Said" replay analysis
+    what_you_could_have_said = generate_missed_opportunities_replay(room.transcript, room.topic)
+
     report = EndReportResponse(
         room_id=room.room_id,
         topic=room.topic,
@@ -148,12 +199,13 @@ async def generate_gd_report(room: RoomState) -> EndReportResponse:
         overall_score=final_score,
         summary=summary,
         metrics=metrics,
-        criteria_scores=validated_criteria
+        criteria_scores=validated_criteria,
+        what_you_could_have_said=what_you_could_have_said
     )
 
     room.cached_report = report
 
-    # 4. Persist progress into Student SQLite profile and Reports table
+    # 5. Persist progress into Student SQLite profile and Reports table
     try:
         update_student_progress(
             student_id=room.student_id,

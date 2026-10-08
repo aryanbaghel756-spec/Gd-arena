@@ -1,12 +1,15 @@
 import time
+import json
 from typing import Optional, List, Dict
 from .models import (
-    TurnDetail, NextTurnResponse, EndReportResponse, Metrics, CriterionScore, QuoteRef, Topic, TopicsResponse
+    TurnDetail, NextTurnResponse, EndReportResponse, Metrics, CriterionScore, QuoteRef,
+    Topic, TopicsResponse, MissedOpportunity
 )
 from .store import RoomState
 from .personas import PERSONA_CATALOG, MODERATOR
 from .facts_db import get_facts_for_topic
 from .satisfaction import process_student_utterance_and_learnings
+from .database import update_student_progress, get_connection
 
 MOCK_TOPICS = [
     Topic(
@@ -15,7 +18,35 @@ MOCK_TOPICS = [
         category="Technology & Economy",
         difficulty="Medium",
         suggested_duration_sec=300,
-        context="Debate whether rapid AI automation will cause permanent unemployment or lead to high-value job creation based on WEF and OECD data."
+        context="Debate whether rapid AI automation will cause permanent unemployment or lead to high-value job creation based on WEF and OECD data.",
+        format="standard"
+    ),
+    Topic(
+        id="case-startup-crisis",
+        title="Case Study: NovaTech Crisis - 30% Layoffs vs. 15% Salary Cuts",
+        category="Corporate Strategy & Crisis",
+        difficulty="Hard",
+        suggested_duration_sec=300,
+        context="A Series B startup faces a 40% revenue drop with 8 months runway. Debate employee retention vs burn reduction.",
+        format="case_based"
+    ),
+    Topic(
+        id="abstract-silence",
+        title="Abstract: Silence is More Eloquent Than Words",
+        category="Philosophy & Leadership",
+        difficulty="Hard",
+        suggested_duration_sec=300,
+        context="Interpret the strategic, diplomatic, and interpersonal dimensions of silence versus verbal articulation in leadership.",
+        format="abstract"
+    ),
+    Topic(
+        id="controversial-wealth-cap",
+        title="Controversial: Should Maximum Personal Wealth Be Capped at $1 Billion?",
+        category="Public Policy & Ethics",
+        difficulty="Hard",
+        suggested_duration_sec=300,
+        context="Examine wealth inequality, capital mobility, investment incentives, and progressive taxation.",
+        format="controversial"
     ),
     Topic(
         id="remote-work",
@@ -23,15 +54,8 @@ MOCK_TOPICS = [
         category="Workplace & Society",
         difficulty="Easy",
         suggested_duration_sec=300,
-        context="Examine Stanford/Bloom research on productivity, mentorship deficit, and urban economic shifts."
-    ),
-    Topic(
-        id="social-media-regulation",
-        title="Should Social Media Algorithms Be Strictly Regulated by Government?",
-        category="Ethics & Policy",
-        difficulty="Hard",
-        suggested_duration_sec=300,
-        context="Discuss EU Digital Services Act precedents, algorithmic amplification harms, and free speech protections."
+        context="Examine Stanford/Bloom research on productivity, mentorship deficit, and urban economic shifts.",
+        format="standard"
     )
 ]
 
@@ -48,15 +72,45 @@ def advance_mock_turn(
     now_ms = int(time.time() * 1000)
     remaining_sec = room.get_remaining_sec()
     verified_facts = get_facts_for_topic(room.topic)
+    is_hinglish = (room.language == "hinglish")
 
-    # Handle interruption if supplied
     if interrupted_turn_id:
         room.mark_interrupted(interrupted_turn_id)
 
     # 1. Opening phase: If transcript is empty, moderator starts
     if len(room.transcript) == 0:
         room.phase = "opening"
-        text = f"Welcome everyone to today's group discussion on '{room.topic}'. Let us anchor our viewpoints in verified empirical evidence. Who would like to initiate?"
+        if room.format == "case_based":
+            text = (
+                f"Welcome to this Case-Study GD on '{room.topic}'. "
+                "Analyze the stakeholder trade-offs between runway survival and employee morale. Who will begin?"
+                if not is_hinglish else
+                f"Welcome everyone! Aaj hum case study discuss kar rahe hain: '{room.topic}'. "
+                "Kon start karega with problem analysis?"
+            )
+        elif room.format == "abstract":
+            text = (
+                f"Welcome everyone to this Abstract GD on '{room.topic}'. "
+                "Look beyond literal meanings and present multidimensional interpretations. The floor is open."
+                if not is_hinglish else
+                f"Welcome everyone! Aaj ka abstract topic hai: '{room.topic}'. "
+                "Isko different perspectives se interpret karke initiate kijiye."
+            )
+        elif room.format == "fishbowl":
+            text = (
+                f"Welcome to the Fishbowl GD on '{room.topic}'. "
+                "Inner circle participants will initiate the debate. Observer may enter the circle when ready."
+                if not is_hinglish else
+                f"Welcome to the Fishbowl GD on '{room.topic}'. "
+                "Inner circle se start karenge, jab aap ready ho circle enter karke speak kar sakte hain."
+            )
+        else:
+            text = (
+                f"Welcome everyone to today's group discussion on '{room.topic}'. Let us anchor our viewpoints in verified empirical evidence. Who would like to initiate?"
+                if not is_hinglish else
+                f"Welcome everyone to today's discussion on '{room.topic}'. Data aur logic ke basis par discuss karte hain. Kon start karega?"
+            )
+
         mod_turn = room.add_turn(
             speaker_id="moderator",
             speaker_name=MODERATOR["name"],
@@ -98,11 +152,15 @@ def advance_mock_turn(
         if learning["intent"]["is_satisfied_signal"]:
             room.is_satisfied = True
 
-    # 3. Dynamic closing logic: only close if student is satisfied or explicit end
+    # 3. Dynamic closing logic
     if remaining_sec <= 40 and room.phase == "discussion":
         if room.is_satisfied:
             room.phase = "closing"
-            text = "As the fundamental questions have been satisfactorily explored, let us begin our concluding remarks."
+            text = (
+                "As the fundamental questions have been satisfactorily explored, let us begin our concluding remarks."
+                if not is_hinglish else
+                "Sabhi major points aur doubts cover ho chuke hain, chaliye ab final conclusion summarize karte hain."
+            )
             mod_turn = room.add_turn(
                 speaker_id="moderator",
                 speaker_name=MODERATOR["name"],
@@ -128,8 +186,11 @@ def advance_mock_turn(
                 degraded=False
             )
         else:
-            # Grant dynamic continuation so student gets real answers
-            text = "We have covered our baseline time, but you have an open inquiry. Let us provide a concrete factual resolution."
+            text = (
+                "We have reached our baseline time, but you have an open inquiry. Let us provide a concrete factual resolution."
+                if not is_hinglish else
+                "Baseline time ho gaya hai par student ka query open hai. Let's make sure unko clear answer mile."
+            )
             mod_turn = room.add_turn(
                 speaker_id="moderator",
                 speaker_name=MODERATOR["name"],
@@ -167,47 +228,53 @@ def advance_mock_turn(
                 degraded=False
             )
 
-        if (now_ms - room.last_student_turn_ms) > 35000:
+        pause_threshold_ms = room.patience_sec * 6000
+        if (now_ms - room.last_student_turn_ms) > pause_threshold_ms:
             fact_ref = verified_facts.get("verified_data_points", [{}])[0].get("claim", "data")
+            nudge_msg = (
+                f"You haven't spoken recently. How does the verified evidence on '{fact_ref}' shape your view?"
+                if not is_hinglish else
+                f"Aap thodi der se chup hain. '{fact_ref}' par aapka kya take hai, share kijiye."
+            )
             return NextTurnResponse(
                 turn=None,
                 next_actor="student",
                 phase=room.phase,  # type: ignore
                 remaining_sec=remaining_sec,
-                nudge=f"The floor is yours. Consider how the verified data on '{fact_ref}' influences your conclusion.",
+                nudge=nudge_msg,
                 degraded=False
             )
 
-    # 5. Pick an AI participant to respond with real verified facts
+    # 5. Pick an AI participant to respond
     p_idx = len(room.transcript) % len(room.participants)
     persona_obj = room.participants[p_idx]
     pid = persona_obj.id
 
     canned_responses: Dict[str, List[str]] = {
         "aarav": [
-            "According to the World Economic Forum, 85 million routine roles will be displaced alongside 97 million new tech and synthesis roles, proving net-positive expansion.",
-            "Historical Bureau of Labor Statistics data shows farm employment dropped from 70% to under 3%, yet real median wages rose 400% through industrial diversification.",
-            "Goldman Sachs estimates generative AI will lift global GDP by 7% (nearly $7 trillion) over 10 years, fueling adjacent service employment."
+            "According to the World Economic Forum, 85 million routine roles will be displaced alongside 97 million new tech and synthesis roles, proving net-positive expansion." if not is_hinglish else "WEF ke data ke mutabik 85 million jobs automate hongi par 97 million nayi roles create hongi, so net growth positive hai.",
+            "Historical Bureau of Labor Statistics data shows farm employment dropped from 70% to under 3%, yet real median wages rose 400% through industrial diversification." if not is_hinglish else "Historical data dekhein toh farm labor 70% se ghat kar 3% hua tha, par wages 400% badhi industrialization ki wajah se.",
+            "Goldman Sachs estimates generative AI will lift global GDP by 7% (nearly $7 trillion) over 10 years, fueling adjacent service employment." if not is_hinglish else "Goldman Sachs estimate karta hai ki AI se global GDP 7% badhegi, jo local services me nayi jobs generate karegi."
         ],
         "meera": [
-            "Rather than viewing AI as automated replacement, Stanford studies highlight collaborative co-piloting where knowledge workers spend 40% more time on high-level strategy.",
-            "Imagine entirely new vocational disciplines like algorithmic ethics auditor and prompt systems architects that did not exist three years ago.",
-            "When routine tasks are automated, human resources shift toward empathetic healthcare, creative education, and fundamental research."
+            "Rather than viewing AI as automated replacement, Stanford studies highlight collaborative co-piloting where knowledge workers spend 40% more time on high-level strategy." if not is_hinglish else "AI ko replacement ki jagah co-pilot samjho. Stanford study kehti hai log routine kaam ki jagah strategy me 40% zyada time spend kar rahe hain.",
+            "Imagine entirely new vocational disciplines like algorithmic ethics auditor and prompt systems architects that did not exist three years ago." if not is_hinglish else "Socho algorithmic ethics aur digital systems architecture jaise naye careers jo 3 saal pehle exist bhi nahi karte the.",
+            "When routine tasks are automated, human resources shift toward empathetic healthcare, creative education, and fundamental research." if not is_hinglish else "Jab routine tasks automate hote hain, human capital creative education aur empathetic healthcare me invest hota hai."
         ],
         "kabir": [
-            "While long-term trends look positive, the OECD 2023 report flags that 27% of current occupations face high automation risk with painful transitional friction.",
-            "We must challenge the 'lump of labor' assumption: displaced workers cannot easily transition into AI engineering within a six-month retraining window.",
-            "If corporate productivity decoupling concentrates profits in top tech monopolies, how will local tax bases sustain displaced labor without intervention?"
+            "While long-term trends look positive, the OECD 2023 report flags that 27% of current occupations face high automation risk with painful transitional friction." if not is_hinglish else "Long term toh theek hai, par OECD 2023 report kehti hai 27% jobs high risk par hain. Short term me un workers ka kya hoga?",
+            "We must challenge the 'lump of labor' assumption: displaced workers cannot easily transition into AI engineering within a six-month retraining window." if not is_hinglish else "Hume ye nahi bhulna chahiye ki ground level par ek displaced worker 6 mahine me AI engineer nahi ban sakta.",
+            "If corporate productivity decoupling concentrates profits in top tech monopolies, how will local tax bases sustain displaced labor without intervention?" if not is_hinglish else "Agar sarra profit top tech giants me consolidate hoga, toh local workers ko support karne ke liye tax safety net kahan se aayega?"
         ],
         "ananya": [
-            "Kabir makes a valid point regarding transition friction; however, combining public reskilling grants with private tech apprenticeships can bridge that gap.",
-            "Looking at both perspectives, the resolution lies in robust safety nets paired with active labor market policies as demonstrated in Nordic economies.",
-            "Synthesizing Aarav's data and Kabir's concern, the transition speed is the true risk factor, which targeted policy can effectively mitigate."
+            "Kabir makes a valid point regarding transition friction; however, combining public reskilling grants with private tech apprenticeships can bridge that gap." if not is_hinglish else "Kabir ka point valid hai transition friction par, par agar government reskilling grants de aur companies apprenticeship de, toh ye gap bridge ho sakta hai.",
+            "Looking at both perspectives, the resolution lies in robust safety nets paired with active labor market policies as demonstrated in Nordic economies." if not is_hinglish else "Dono sides ko dekh kar, Nordic model jaise active labor policies aur transition security hi best practical solution hai.",
+            "Synthesizing Aarav's data and Kabir's concern, the transition speed is the true risk factor, which targeted policy can effectively mitigate." if not is_hinglish else "Aarav ka data aur Kabir ka concern combine karein toh speed of transition hi asli challenge hai, jisko policy se solve kiya ja sakta hai."
         ],
         "rohan": [
-            "The geopolitical reality is decisive: economies that delay AI deployment risk severe competitiveness decline against nations actively investing in automation.",
-            "Aggressive modernization and proactive curriculum reform are our only sustainable strategies in an interconnected global digital economy.",
-            "We cannot let transition hesitancy paralyze technological leadership; proactive reskilling at scale is the required national imperative."
+            "The geopolitical reality is decisive: economies that delay AI deployment risk severe competitiveness decline against nations actively investing in automation." if not is_hinglish else "Geopolitical reality simple hai: jo desh AI adopt karne me delay karega, woh global market me peeche chhoot jayega.",
+            "Aggressive modernization and proactive curriculum reform are our only sustainable strategies in an interconnected global digital economy." if not is_hinglish else "Hume execution speed badhani hogi. Proactive curriculum update hi hamara sabse strong defense hai.",
+            "We cannot let transition hesitancy paralyze technological leadership; proactive reskilling at scale is the required national imperative." if not is_hinglish else "Fear of disruption ki wajah se leadership lose nahi kar sakte. Scale par skilling karna hi national priority hona chahiye."
         ]
     }
 
@@ -321,10 +388,17 @@ def generate_mock_report(room: RoomState) -> EndReportResponse:
         )
     ]
 
-    from .database import update_student_progress, get_connection
-    import json
+    # "What You Could Have Said" replay
+    what_you_could_have_said = [
+        MissedOpportunity(
+            turn_id="turn_3",
+            speaker_name="Kabir",
+            trigger_text="While long-term trends look positive, what about transitional unemployment?",
+            suggested_response="I acknowledge Kabir's point on friction, but according to Nordic active labor studies, transition voucher programs reduce frictional unemployment duration by 45%.",
+            missed_angle="Pivoting from obstacle to proactive policy solution with empirical evidence"
+        )
+    ]
 
-    # Update persistent student progress in SQLite
     update_student_progress(
         student_id=room.student_id,
         session_score=82
@@ -358,5 +432,6 @@ def generate_mock_report(room: RoomState) -> EndReportResponse:
         overall_score=82,
         summary="Strong, fact-grounded discussion. You demonstrated clear logical reasoning, effectively probed counter-arguments, and synthesized consensus around labor transition solutions.",
         metrics=metrics,
-        criteria_scores=criteria
+        criteria_scores=criteria,
+        what_you_could_have_said=what_you_could_have_said
     )

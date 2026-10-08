@@ -24,13 +24,43 @@ async def advance_room_turn(
     if interrupted_turn_id:
         room.mark_interrupted(interrupted_turn_id)
 
-    # 2. Opening phase: If transcript is empty, moderator starts with evidence-based framing
+    is_hinglish = (room.language == "hinglish")
+
+    # 2. Opening phase: If transcript is empty, moderator starts with format-specific framing
     if len(room.transcript) == 0:
         room.phase = "opening"
-        text = (
-            f"Welcome everyone to today's group discussion on '{room.topic}'. "
-            f"Please substantiate your perspectives with empirical logic and real-world examples. Who would like to initiate?"
-        )
+        if room.format == "case_based":
+            text = (
+                f"Welcome to this Case-Study GD on '{room.topic}'. "
+                "Analyze the stakeholder trade-offs between runway survival and employee morale. Who will begin?"
+                if not is_hinglish else
+                f"Welcome everyone! Aaj hum case study discuss kar rahe hain: '{room.topic}'. "
+                "Kon start karega with problem analysis?"
+            )
+        elif room.format == "abstract":
+            text = (
+                f"Welcome everyone to this Abstract GD on '{room.topic}'. "
+                "Look beyond literal meanings and present multidimensional interpretations. The floor is open."
+                if not is_hinglish else
+                f"Welcome everyone! Aaj ka abstract topic hai: '{room.topic}'. "
+                "Isko different perspectives se interpret karke initiate kijiye."
+            )
+        elif room.format == "fishbowl":
+            text = (
+                f"Welcome to the Fishbowl GD on '{room.topic}'. "
+                "Inner circle participants will initiate the debate. Observer may enter the circle when ready."
+                if not is_hinglish else
+                f"Welcome to the Fishbowl GD on '{room.topic}'. "
+                "Inner circle se start karenge, jab aap ready ho circle enter karke speak kar sakte hain."
+            )
+        else:
+            text = (
+                f"Welcome everyone to today's group discussion on '{room.topic}'. "
+                "Please substantiate your perspectives with empirical logic and real-world examples. Who would like to initiate?"
+                if not is_hinglish else
+                f"Welcome everyone to today's discussion on '{room.topic}'. Data aur logic ke basis par discuss karte hain. Kon start karega?"
+            )
+
         mod_turn = room.add_turn(
             speaker_id="moderator",
             speaker_name=MODERATOR["name"],
@@ -156,15 +186,21 @@ async def advance_room_turn(
                 degraded=False
             )
 
-        # Inactivity nudge: if student has been silent for > 35 seconds
-        if (now_ms - room.last_student_turn_ms) > 35000:
+        # Inactivity nudge: dynamic based on room patience_sec
+        pause_threshold_ms = room.patience_sec * 6000
+        if (now_ms - room.last_student_turn_ms) > pause_threshold_ms:
             prompt_fact = verified_facts.get("verified_data_points", [{}])[0].get("claim", "empirical evidence")
+            nudge_msg = (
+                f"You haven't spoken recently. How does the verified evidence on '{prompt_fact}' shape your view?"
+                if not is_hinglish else
+                f"Aap thodi der se chup hain. '{prompt_fact}' par aapka kya take hai, share kijiye."
+            )
             return NextTurnResponse(
                 turn=None,
                 next_actor="student",
                 phase=room.phase,  # type: ignore
                 remaining_sec=remaining_sec,
-                nudge=f"The floor is open. How would you evaluate the real-world trade-off concerning {prompt_fact}?",
+                nudge=nudge_msg,
                 degraded=False
             )
 

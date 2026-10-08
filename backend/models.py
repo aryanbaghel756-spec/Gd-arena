@@ -27,6 +27,7 @@ class Topic(BaseModel):
     difficulty: str
     suggested_duration_sec: int
     context: str
+    format: Optional[str] = "standard"  # standard, case_based, abstract, controversial
 
 class TopicsResponse(BaseModel):
     topics: List[Topic]
@@ -67,12 +68,16 @@ class CreateRoomRequest(BaseModel):
     topic: str
     panel_size: int = Field(ge=3, le=5, default=4)
     language: Literal["en", "hinglish"] = "en"
+    format: Literal["standard", "case_based", "abstract", "controversial", "fishbowl"] = "standard"
+    patience_sec: int = Field(ge=2, le=15, default=5)
     student_id: Optional[str] = "student_default"
 
 class CreateRoomResponse(BaseModel):
     room_id: str
     topic: str
     language: str
+    format: str = "standard"
+    patience_sec: int = 5
     duration_sec: int
     created_at_ms: int
     moderator: Participant
@@ -93,6 +98,8 @@ class GetRoomResponse(BaseModel):
     room_id: str
     topic: str
     language: str
+    format: str = "standard"
+    patience_sec: int = 5
     phase: Literal["opening", "discussion", "closing", "ended"]
     duration_sec: int
     remaining_sec: int
@@ -126,7 +133,7 @@ class NextTurnResponse(BaseModel):
     degraded: bool = False
 
 
-# --- Report ---
+# --- Report & "What You Could Have Said" ---
 class QuoteRef(BaseModel):
     turn_id: str
     text: str
@@ -142,6 +149,13 @@ class Metrics(BaseModel):
     word_counts: Dict[str, int]
     student_interruptions_count: int
 
+class MissedOpportunity(BaseModel):
+    turn_id: str
+    speaker_name: str
+    trigger_text: str
+    suggested_response: str
+    missed_angle: str
+
 class EndReportResponse(BaseModel):
     room_id: str
     topic: str
@@ -151,6 +165,7 @@ class EndReportResponse(BaseModel):
     summary: str
     metrics: Metrics
     criteria_scores: List[CriterionScore]
+    what_you_could_have_said: Optional[List[MissedOpportunity]] = []
 
 
 # --- Student Profile & Satisfaction ---

@@ -245,3 +245,58 @@ def test_student_satisfaction_and_memory():
     # 3. Check updated profile has retained the knowledge
     updated_prof = client.get("/api/students/student_persistent_test/profile").json()
     assert any("Grasped core trade-offs" in c for c in updated_prof["known_concepts"])
+
+def test_gd_formats_and_custom_topics():
+    # Case based format
+    case_res = client.post("/api/rooms", json={
+        "topic": "NovaTech Crisis - Layoffs vs Salary Cuts",
+        "panel_size": 3,
+        "format": "case_based",
+        "patience_sec": 7
+    })
+    assert case_res.status_code == 201
+    case_data = case_res.json()
+    assert case_data["format"] == "case_based"
+    assert case_data["patience_sec"] == 7
+
+    room_id = case_data["room_id"]
+    t1 = client.post(f"/api/rooms/{room_id}/next", json={}).json()
+    assert "Case-Study" in t1["turn"]["text"]
+
+    # Custom topic grounding
+    facts_res = client.get(f"/api/rooms/{room_id}/facts")
+    assert facts_res.status_code == 200
+    facts = facts_res.json()
+    assert "core_domains" in facts
+    assert len(facts["core_domains"]) >= 2
+
+def test_hinglish_mode():
+    res = client.post("/api/rooms", json={
+        "topic": "Will AI Create More Jobs Than It Destroys?",
+        "panel_size": 3,
+        "language": "hinglish"
+    })
+    room_id = res.json()["room_id"]
+    t1 = client.post(f"/api/rooms/{room_id}/next", json={}).json()
+    # Moderator speaks in natural Hindi/Hinglish
+    assert any(w in t1["turn"]["text"].lower() for w in ["karega", "aaj", "hum", "chaliye", "discuss"])
+
+def test_what_you_could_have_said_in_report():
+    res = client.post("/api/rooms", json={
+        "topic": "Will AI Create More Jobs Than It Destroys?",
+        "panel_size": 3
+    })
+    room_id = res.json()["room_id"]
+    client.post(f"/api/rooms/{room_id}/next", json={})
+    client.post(f"/api/rooms/{room_id}/next", json={"student_text": "I think tech creates jobs."})
+    client.post(f"/api/rooms/{room_id}/next", json={})
+    
+    report_res = client.post(f"/api/rooms/{room_id}/end", json={})
+    assert report_res.status_code == 200
+    report = report_res.json()
+    assert "what_you_could_have_said" in report
+    assert len(report["what_you_could_have_said"]) >= 1
+    item = report["what_you_could_have_said"][0]
+    assert "suggested_response" in item
+    assert "missed_angle" in item
+
