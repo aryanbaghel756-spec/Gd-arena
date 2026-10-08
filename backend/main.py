@@ -102,14 +102,23 @@ async def general_exception_handler(request: Request, exc: Exception):
 from fastapi.staticfiles import StaticFiles
 
 # --- Static Assets & Frontend Mounting ---
+frontend_out_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "out"))
 frontend_dist_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
-if os.path.exists(frontend_dist_dir):
-    assets_dir = os.path.join(frontend_dist_dir, "assets")
-    if os.path.exists(assets_dir):
-        app.mount("/assets", StaticFiles(directory=assets_dir), name="frontend-assets")
+
+# Mount Next.js static assets (_next)
+if os.path.exists(os.path.join(frontend_out_dir, "_next")):
+    app.mount("/_next", StaticFiles(directory=os.path.join(frontend_out_dir, "_next")), name="nextjs-assets")
+
+# Mount Vite static assets (assets) if present
+if os.path.exists(os.path.join(frontend_dist_dir, "assets")):
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist_dir, "assets")), name="frontend-assets")
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
+    out_index = os.path.join(frontend_out_dir, "index.html")
+    if os.path.exists(out_index):
+        with open(out_index, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
     dist_index = os.path.join(frontend_dist_dir, "index.html")
     if os.path.exists(dist_index):
         with open(dist_index, "r", encoding="utf-8") as f:
