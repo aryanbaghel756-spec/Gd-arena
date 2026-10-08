@@ -88,6 +88,9 @@ export function ControlDock({
       } else if (e.code === 'KeyC') {
         e.preventDefault();
         onToggleCaptions();
+      } else if (e.code === 'KeyT') {
+        e.preventDefault();
+        setIsTypeInsteadOpen((prev) => !prev);
       }
     }
 
@@ -115,12 +118,26 @@ export function ControlDock({
       onSubmitTypedSpeech(typedMessage.trim());
     }
     setTypedMessage('');
-    setIsTypeInsteadOpen(false);
   };
 
   return (
     <div className="w-full space-y-3">
       
+      {/* Mode Helper Banner (Always visible tip) */}
+      <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-[#140b12]/80 border border-[#ff1e2d]/25 text-[11px] font-mono text-zinc-400">
+        <span className="flex items-center gap-1.5">
+          <Volume2 className="w-3.5 h-3.5 text-[#ffc400]" />
+          <span>Mic Mode: <strong>Spacebar</strong> hold karein | Typing Mode: <strong>Type Text [T]</strong> click karein</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => setIsTypeInsteadOpen(!isTypeInsteadOpen)}
+          className="text-[#ffc400] hover:text-white underline font-bold"
+        >
+          {isTypeInsteadOpen ? 'Hide Typing Box' : 'Open Typing Box (T)'}
+        </button>
+      </div>
+
       {/* Gentle Error Banner (if mic is denied or connection drops) */}
       {micError && (
         <div className="p-3.5 rounded-xl bg-[#260a10]/95 border border-[#ff1e2d] shadow-[0_0_20px_rgba(255,30,45,0.4)] backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
@@ -137,10 +154,10 @@ export function ControlDock({
               className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3d0f19] hover:bg-[#521422] border border-[#ff1e2d]/60 text-white font-mono transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span>Retry</span>
+              <span>Retry Mic</span>
             </button>
             <button
-              onClick={() => setIsTypeInsteadOpen(!isTypeInsteadOpen)}
+              onClick={() => setIsTypeInsteadOpen(true)}
               className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1e131b] hover:bg-[#2e1d2a] border border-[#ffc400]/50 text-[#ffc400] font-mono transition-colors"
             >
               <Keyboard className="w-3.5 h-3.5" />
@@ -150,27 +167,64 @@ export function ControlDock({
         </div>
       )}
 
-      {/* Type-Instead Drawer Form */}
+      {/* Prominent Type-Instead Drawer Form */}
       {isTypeInsteadOpen && (
-        <form onSubmit={handleSendTypeMessage} className="p-3.5 rounded-xl bg-[#140b12] border border-[#ffc400]/60 flex items-center gap-2 shadow-[0_4px_20px_rgba(0,0,0,0.6)]">
-          <input
-            type="text"
-            value={typedMessage}
-            onChange={(e) => setTypedMessage(e.target.value)}
-            placeholder="Type your discussion response to simulate voice speech..."
-            className="flex-1 px-3 py-2 rounded-lg bg-[#0a0509] border border-[#ff1e2d]/40 text-white placeholder-zinc-500 text-xs sm:text-sm focus:outline-none focus:border-[#ffc400]"
-            autoFocus
-          />
-          <RectButton
-            type="submit"
-            variant="primary"
-            size="sm"
-            disabled={!typedMessage.trim()}
-            icon={<Send className="w-3.5 h-3.5" />}
-          >
-            Speak Turn
-          </RectButton>
-        </form>
+        <div className="p-4 rounded-xl bg-[#140b12]/95 border border-[#ffc400]/70 shadow-[0_0_25px_rgba(255,196,0,0.25)] space-y-3 animate-fadeIn">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono text-[#ffc400] font-bold flex items-center gap-1.5">
+              <Keyboard className="w-4 h-4 text-[#ffc400]" />
+              <span>TYPE YOUR GD ARGUMENT (Voice Alternative)</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsTypeInsteadOpen(false)}
+              className="text-xs text-zinc-400 hover:text-white font-mono"
+            >
+              ✕ Close
+            </button>
+          </div>
+
+          <form onSubmit={handleSendTypeMessage} className="flex items-center gap-2">
+            <input
+              type="text"
+              value={typedMessage}
+              onChange={(e) => setTypedMessage(e.target.value)}
+              placeholder="Apna argument ya counter yahan type karein... (Press Enter to Send)"
+              className="flex-1 px-4 py-2.5 rounded-lg bg-[#0a0509] border border-[#ff1e2d]/50 text-white placeholder-zinc-500 text-xs sm:text-sm focus:outline-none focus:border-[#ffc400] shadow-inner font-sans"
+              autoFocus
+            />
+            <RectButton
+              type="submit"
+              variant="primary"
+              size="md"
+              disabled={!typedMessage.trim()}
+              icon={<Send className="w-4 h-4" />}
+            >
+              <span>Speak Turn</span>
+            </RectButton>
+          </form>
+
+          {/* Quick Starter Chips */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <span className="text-[10px] font-mono text-zinc-500 uppercase">Quick Starters:</span>
+            {[
+              "I agree with Aarav's point, but looking at...",
+              "Kabir raised a valid risk, however according to data...",
+              "Connecting Ananya's view with Meera's idea...",
+              "Samajh gaya! I agree with this framework.",
+              "Mera ek doubt hai: how will this be implemented?"
+            ].map((chip, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setTypedMessage(chip)}
+                className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#1e101b] hover:bg-[#2e1829] border border-[#ff1e2d]/30 text-amber-200/90 transition-colors"
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Main Control Dock Container */}
@@ -188,6 +242,23 @@ export function ControlDock({
             title="Toggle Continuous Mic (M)"
           >
             <span className="hidden sm:inline">{isMicOn ? 'Mic Live' : 'Mic Off'}</span>
+          </RectButton>
+
+          {/* PROMINENT TYPE BUTTON (Direct Typing Option) */}
+          <RectButton
+            variant={isTypeInsteadOpen ? 'primary' : 'secondary'}
+            size="md"
+            onClick={() => setIsTypeInsteadOpen(!isTypeInsteadOpen)}
+            icon={<Keyboard className="w-4 h-4 text-[#ffc400]" />}
+            aria-label="Type Argument"
+            title="Toggle Typing Input (T)"
+          >
+            <span className="flex items-center gap-1.5 font-bold">
+              <span>Type Text</span>
+              <span className="hidden md:inline text-[9px] px-1 py-0.2 rounded bg-black/40 text-[#ffc400] font-mono border border-amber-500/40">
+                T
+              </span>
+            </span>
           </RectButton>
 
           {/* Interrupt */}
