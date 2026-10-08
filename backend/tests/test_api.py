@@ -362,3 +362,45 @@ def test_join_room_multi_seat_support():
     room_updated = client.get(f"/api/rooms/{room_id}").json()
     assert any(turn["speaker_name"] == "Rahul" for turn in room_updated["transcript"])
 
+def test_addressed_persona_selection():
+    """Verify that when a student addresses a persona like Kabir, that specific persona answers."""
+    create_res = client.post("/api/rooms", json={
+        "topic": "Stock Market & Nifty 50: Long-Term Wealth Creation or Pure Speculation?",
+        "panel_size": 4,
+        "language": "en"
+    })
+    room_id = create_res.json()["room_id"]
+    # Mod turn
+    client.post(f"/api/rooms/{room_id}/next", json={})
+
+    # Student specifically calls Kabir
+    res = client.post(f"/api/rooms/{room_id}/next", json={
+        "student_text": "Kabir, what is your view on short-term trading risks?"
+    })
+    assert res.status_code == 200
+    turn_data = res.json()
+    assert turn_data["turn"]["speaker_id"] == "kabir"
+    assert turn_data["turn"]["speaker_name"] == "Kabir"
+    assert turn_data["next_actor"] == "student"
+    assert "SEBI" in turn_data["turn"]["text"] or "risk" in turn_data["turn"]["text"].lower()
+
+def test_stock_market_and_nifty_contextual_response():
+    """Verify AI answers specifically on Stock Market and Nifty 50 without out-of-context drift."""
+    create_res = client.post("/api/rooms", json={
+        "topic": "Stock Market & Nifty 50: Long-Term Wealth Creation or Pure Speculation?",
+        "panel_size": 3,
+        "language": "en"
+    })
+    room_id = create_res.json()["room_id"]
+    client.post(f"/api/rooms/{room_id}/next", json={})
+
+    res = client.post(f"/api/rooms/{room_id}/next", json={
+        "student_text": "Can an individual create wealth through Nifty 50 index?"
+    })
+    assert res.status_code == 200
+    t = res.json()["turn"]
+    # Check that response discusses market/nifty/investing, NOT AI jobs or farm labor
+    assert any(word in t["text"].lower() for word in ["nifty", "market", "invest", "trading", "sebi", "cagr", "index"])
+    assert "farm labor" not in t["text"].lower()
+    assert "robot" not in t["text"].lower()
+

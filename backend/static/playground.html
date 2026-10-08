@@ -106,6 +106,8 @@
         <option value="Case Study: NovaTech Crisis - 30% Layoffs vs. 15% Salary Cuts">Case: NovaTech Crisis (Layoffs vs Cuts)</option>
         <option value="Abstract: Silence is More Eloquent Than Words">Abstract: Silence is More Eloquent Than Words</option>
         <option value="Controversial: Should Maximum Personal Wealth Be Capped at $1 Billion?">Controversial: Wealth Cap at $1B</option>
+        <option value="Stock Market & Nifty 50: Long-Term Wealth Creation or Pure Speculation?">Stock Market & Nifty 50: Long-Term Wealth vs Speculation</option>
+        <option value="Mandatory 75% Attendance in Colleges: Discipline or Barrier to Skill Development?">75% Attendance Rule: Discipline vs Skill Development</option>
         <option value="Remote Work vs. Return to Office: The Future of Collaboration">Remote Work vs. Return to Office</option>
         <option value="__custom__">✍️ + Custom Topic (Type your own)...</option>
       </select>
@@ -235,6 +237,9 @@
   let recognition = null;
   let accumulatedTranscript = '';
   let activeSpeakers = {};
+  let isInterrupted = false;
+  let pendingInterruptedTurnId = null;
+  let aiTurnTimer = null;
 
   // Check Web Speech API
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -271,7 +276,7 @@
 
   function speakTurn(text, voiceHint, onEndCallback) {
     if (!('speechSynthesis' in window)) {
-      if (onEndCallback) onEndCallback();
+      if (onEndCallback && !isInterrupted) onEndCallback();
       return;
     }
     window.speechSynthesis.cancel();
@@ -309,12 +314,14 @@
     utterance.onend = () => {
       highlightSpeaking(null);
       document.getElementById('interruptBtn').style.display = 'none';
+      if (isInterrupted) return;
       if (onEndCallback) onEndCallback();
     };
 
-    utterance.onerror = () => {
+    utterance.onerror = (e) => {
       highlightSpeaking(null);
       document.getElementById('interruptBtn').style.display = 'none';
+      if (isInterrupted || e.error === 'canceled' || e.error === 'interrupted') return;
       if (onEndCallback) onEndCallback();
     };
 
@@ -484,6 +491,10 @@
   // Advance turn loop
   async function advanceTurn(studentText = null, interruptedId = null) {
     if (!currentRoomId) return;
+    if (aiTurnTimer) {
+      clearTimeout(aiTurnTimer);
+      aiTurnTimer = null;
+    }
 
     try {
       const payload = {};
@@ -514,9 +525,10 @@
         if (captionEl) captionEl.innerText = `${data.turn.speaker_name}: "${data.turn.text}"`;
 
         speakTurn(data.turn.text, data.turn.voice, () => {
+          if (isInterrupted) return;
           // If next actor is AI, advance again
           if (data.next_actor === 'ai') {
-            setTimeout(() => { advanceTurn(); }, 1200);
+            aiTurnTimer = setTimeout(() => { advanceTurn(); }, 1200);
           } else {
             document.getElementById('liveStt').innerText = "The floor is yours! Speak with microphone or type your point below.";
           }
@@ -562,9 +574,13 @@
     }
 
     const textToSend = accumulatedTranscript.trim();
+    const intId = pendingInterruptedTurnId;
+    pendingInterruptedTurnId = null;
+    isInterrupted = false;
+
     if (textToSend) {
       appendBubble('student', 'You', textToSend, false);
-      advanceTurn(textToSend);
+      advanceTurn(textToSend, intId);
     }
     accumulatedTranscript = '';
   }
@@ -585,9 +601,13 @@
       if (recognition) { try { recognition.stop(); } catch (e) {} }
     }
 
+    const intId = pendingInterruptedTurnId;
+    pendingInterruptedTurnId = null;
+    isInterrupted = false;
+
     studentTextInput.value = '';
     appendBubble('student', 'You', typedText, false);
-    advanceTurn(typedText);
+    advanceTurn(typedText, intId);
   }
 
   sendTextBtn.addEventListener('click', sendTypedInput);
@@ -599,20 +619,45 @@
 
   // Interruption button
   document.getElementById('interruptBtn').addEventListener('click', () => {
+    isInterrupted = true;
+    pendingInterruptedTurnId = activeTurnId;
+
+    if (aiTurnTimer) {
+      clearTimeout(aiTurnTimer);
+      aiTurnTimer = null;
+    }
+
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
     document.getElementById('interruptBtn').style.display = 'none';
     highlightSpeaking(null);
 
-    const intId = activeTurnId;
+    // Tag the bubble in transcript as interrupted
+    const lastBubbles = document.querySelectorAll('.turn-bubble');
+    if (lastBubbles.length > 0) {
+      const lastBubble = lastBubbles[lastBubbles.length - 1];
+      const header = lastBubble.querySelector('.turn-header');
+      if (header && !header.querySelector('.interrupted-tag')) {
+        const tag = document.createElement('span');
+        tag.className = 'interrupted-tag';
+        tag.innerText = 'INTERRUPTED';
+        header.appendChild(tag);
+      }
+    }
+
     startRecording();
-    document.getElementById('liveStt').innerText = 'Interrupted! Speak your counter-argument now...';
+    document.getElementById('liveStt').innerText = '✋ You took the floor! Speak now, or type below...';
   });
 
   // End Discussion & Show Report
   document.getElementById('endBtn').addEventListener('click', async () => {
     if (!currentRoomId) return;
+    isInterrupted = true;
+    if (aiTurnTimer) {
+      clearTimeout(aiTurnTimer);
+      aiTurnTimer = null;
+    }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
     try {

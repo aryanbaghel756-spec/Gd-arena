@@ -209,7 +209,15 @@ async def advance_room_turn(
                 degraded=False
             )
 
-    # 6. Generate next AI turn via LLM Router with verified facts and student memory
+    # Check if student addressed a specific persona by name
+    addressed_id = None
+    if student_text:
+        st_lower = student_text.lower()
+        for p in room.participants:
+            if p.name.lower() in st_lower or p.id.lower() in st_lower:
+                addressed_id = p.id
+                break
+
     recent_turns = [
         {
             "id": t.id,
@@ -229,6 +237,8 @@ async def advance_room_turn(
         }
         for p in room.participants
     ]
+    if addressed_id:
+        available_personas = [p for p in available_personas if p["id"] == addressed_id]
 
     llm_result, provider_used, is_degraded = await llm_router.generate_turn(
         topic=room.topic,
@@ -272,7 +282,7 @@ async def advance_room_turn(
         )
 
     # 8. Normal LLM response success
-    spk_id = llm_result.get("speaker", room.participants[0].id)
+    spk_id = addressed_id if addressed_id else llm_result.get("speaker", room.participants[0].id)
     text = llm_result.get("text", "").strip()
     if not text:
         text = "We should analyze this from verified economic principles rather than speculation."
@@ -290,7 +300,7 @@ async def advance_room_turn(
         t_ms=now_ms
     )
 
-    next_actor: str = "ai" if room.consecutive_ai_turns < 2 else "student"
+    next_actor: str = "student" if addressed_id else ("ai" if room.consecutive_ai_turns < 2 else "student")
 
     return NextTurnResponse(
         turn=TurnDetail(

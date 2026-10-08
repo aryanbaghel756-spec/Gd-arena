@@ -56,6 +56,24 @@ MOCK_TOPICS = [
         suggested_duration_sec=300,
         context="Examine Stanford/Bloom research on productivity, mentorship deficit, and urban economic shifts.",
         format="standard"
+    ),
+    Topic(
+        id="stock-market-nifty",
+        title="Stock Market & Nifty 50: Long-Term Wealth Creation or Pure Speculation?",
+        category="Finance & Economy",
+        difficulty="Medium",
+        suggested_duration_sec=300,
+        context="Examine Nifty 50 20-year compounding (~12.5% CAGR), SEBI 93% retail F&O loss study, and risk management.",
+        format="standard"
+    ),
+    Topic(
+        id="college-attendance-75",
+        title="Mandatory 75% Attendance in Colleges: Discipline or Barrier to Skill Development?",
+        category="Education & Campus Life",
+        difficulty="Easy",
+        suggested_duration_sec=300,
+        context="Debate whether strict 75% attendance builds work ethic or deprives engineering students of coding and placement prep time.",
+        format="standard"
     )
 ]
 
@@ -77,6 +95,139 @@ def register_custom_topic(title: str, category: str = "Custom Debate", difficult
     if not any(t.id == slug for t in MOCK_TOPICS):
         MOCK_TOPICS.append(new_topic)
     return new_topic
+
+def generate_contextual_ai_response(
+    room: RoomState,
+    pid: str,
+    student_text: Optional[str],
+    is_hinglish: bool,
+    is_addressed: bool
+) -> str:
+    combined_context = f"{room.topic} {student_text or ''}".lower()
+
+    # 1. Stock Market, Nifty 50, Finance, Investments
+    if any(w in combined_context for w in ["stock", "market", "nifty", "sensex", "trading", "invest", "share", "equity", "finance", "mutual fund", "money"]):
+        responses = {
+            "aarav": (
+                "Looking at Nifty 50 data, it has historically grown around 12% to 13% CAGR over long periods, driven by real corporate earnings rather than quick speculation."
+                if not is_hinglish else
+                "Nifty 50 ke historical data ko dekhein toh long term me 12% se 13% CAGR return mila hai, jo companies ki real profit growth par based hai."
+            ),
+            "kabir": (
+                "We must be realistic about the risks: SEBI reports that over 90% of retail traders lose capital in short-term F&O trading due to lack of risk management."
+                if not is_hinglish else
+                "Hume ground reality dekhni chahiye: SEBI ki study ke mutabik 90% se zyada retail traders F&O trading me apna capital kho dete hain."
+            ),
+            "meera": (
+                "Rather than stressful day trading, index funds and systematic SIPs give young investors a simple way to participate in overall economic growth."
+                if not is_hinglish else
+                "Intraday trading ke stress ki jagah, regular index funds aur SIPs ke zariye beginners safe tarike se long-term wealth create kar sakte hain."
+            ),
+            "ananya": (
+                "Aarav shows the compounding potential and Kabir highlights trading pitfalls. The balanced path is broad index investing paired with a safe emergency fund."
+                if not is_hinglish else
+                "Aarav ka growth point aur Kabir ka risk warning dono valid hain. Smart approach ye hai ki emergency fund ke sath disciplined index investing ki jaye."
+            ),
+            "rohan": (
+                "Inflation erodes idle cash every year. Disciplined investing in top index companies like Nifty 50 is essential to protect purchasing power."
+                if not is_hinglish else
+                "Idle cash par inflation ka loss hota hai. Nifty ke top companies me disciplined investing hi financial security ka reliable tarika hai."
+            )
+        }
+    # 2. College Attendance, 75% Rule, Academics
+    elif any(w in combined_context for w in ["attendance", "college", "75%", "75 percent", "class", "professor", "mandatory", "student", "degree"]):
+        responses = {
+            "aarav": (
+                "Data shows that while 75% attendance builds classroom routine, top students often need dedicated flexible hours for coding, internships, and placement prep."
+                if not is_hinglish else
+                "Data dekhein toh 75% attendance discipline toh lati hai, par students ko coding aur placement prep ke liye flexible self-study hours chahiye hote hain."
+            ),
+            "kabir": (
+                "Mandatory physical presence does not mean genuine learning. If lectures are outdated, forcing students to sit in class only creates frustration."
+                if not is_hinglish else
+                "Sirf biometric attendance lagane se learning nahi hoti. Agar lectures practical nahi hain, toh 75% mandate sirf time waste ban jata hai."
+            ),
+            "meera": (
+                "Colleges should offer credit for verified projects, hackathons, and research rather than counting only physical desk hours."
+                if not is_hinglish else
+                "Attendance ko flexible karke hackathons, real projects aur internships ko academic credits ke form me recognize karna chahiye."
+            ),
+            "ananya": (
+                "A practical compromise is lowering baseline attendance to 60%, with automatic exemptions for verified internships and technical projects."
+                if not is_hinglish else
+                "Best middle ground ye hai ki 60% minimum attendance rakhein aur verified technical projects aur internships ko attendance credit dein."
+            ),
+            "rohan": (
+                "Recruiters evaluate GitHub repositories, live projects, and problem solving, not attendance percentages. Practical skills must take priority."
+                if not is_hinglish else
+                "Companies placement me skills aur practical projects dekhti hain, attendance sheets nahi. Colleges ko skill development par focus karna hoga."
+            )
+        }
+    # 3. AI, Jobs, Automation
+    elif any(w in combined_context for w in ["ai", "job", "automation", "tech", "work", "unemployment", "code", "software"]):
+        responses = {
+            "aarav": (
+                "Looking at the data from the World Economic Forum, 85 million routine jobs will change, but 97 million new roles will be created in tech and green energy."
+                if not is_hinglish else
+                "WEF ke data ke mutabik 85 million jobs automate hongi par 97 million nayi roles create hongi, so net growth positive hai."
+            ),
+            "kabir": (
+                "That sounds positive, but OECD studies show that 27% of jobs face high risk. Non-technical workers cannot easily switch without years of retraining."
+                if not is_hinglish else
+                "Long term toh theek hai, par OECD report kehti hai 27% jobs high risk par hain. Short term me un displaced workers ka kya hoga?"
+            ),
+            "meera": (
+                "Let us think of AI as a helpful assistant rather than a replacement. It takes away repetitive work so we can focus on creative thinking."
+                if not is_hinglish else
+                "AI ko replacement ki jagah co-pilot samjho. Stanford study kehti hai log routine kaam ki jagah strategy me 40% zyada time spend kar rahe hain."
+            ),
+            "ananya": (
+                "Kabir makes a fair point about transition hurdles, but free reskilling grants paired with apprenticeships can bridge that gap."
+                if not is_hinglish else
+                "Kabir ka point valid hai transition friction par, par agar government reskilling grants de aur companies apprenticeship de, toh ye gap bridge ho sakta hai."
+            ),
+            "rohan": (
+                "In the global economy, nations and companies that hesitate to adopt AI will quickly fall behind international competitors."
+                if not is_hinglish else
+                "Geopolitical reality simple hai: jo desh AI adopt karne me delay karega, woh global market me peeche chhoot jayega."
+            )
+        }
+    # 4. General / Custom Debate Topic
+    else:
+        topic_snip = room.topic[:40]
+        responses = {
+            "aarav": (
+                f"When looking at '{topic_snip}', we must evaluate the verified data and measurable trade-offs rather than assumptions."
+                if not is_hinglish else
+                f"'{topic_snip}' par hume real data aur ground metrics ko dekh kar analyze karna chahiye."
+            ),
+            "kabir": (
+                f"On '{topic_snip}', we cannot ignore the real execution bottlenecks and downside risks before celebrating ideal outcomes."
+                if not is_hinglish else
+                f"'{topic_snip}' me theoretical benefits toh hain, par ground level execution risks ko analyze karna zaroori hai."
+            ),
+            "meera": (
+                f"With '{topic_snip}', there is an opportunity to innovate and create human-centric solutions that benefit everyone."
+                if not is_hinglish else
+                f"'{topic_snip}' ko ek positive opportunity ki tarah dekhein toh hum creative solutions develop kar sakte hain."
+            ),
+            "ananya": (
+                f"Looking at '{topic_snip}', the solution lies in finding common ground between practical feasibility and long-term benefit."
+                if not is_hinglish else
+                f"'{topic_snip}' me opposing viewpoints ko merge karke ek realistic consensus banana hi best way forward hai."
+            ),
+            "rohan": (
+                f"Decisive action on '{topic_snip}' is what matters most; fast execution and proactive steps will determine the outcome."
+                if not is_hinglish else
+                f"'{topic_snip}' me delay karne se issues badhenge, decisive action aur fast execution hi key hai."
+            )
+        }
+
+    raw = responses.get(pid, responses.get("aarav", "Let us evaluate the verified logic."))
+    if is_addressed:
+        prefix = "To answer your question directly: " if not is_hinglish else "Aapke point par directly bolu toh: "
+        return prefix + raw
+    return raw
 
 def advance_mock_turn(
     room: RoomState,
@@ -267,40 +418,29 @@ def advance_mock_turn(
             )
 
     # 5. Pick an AI participant to respond
-    p_idx = len(room.transcript) % len(room.participants)
-    persona_obj = room.participants[p_idx]
+    # Check if student addressed a specific persona by name
+    addressed_id = None
+    if student_text:
+        st_lower = student_text.lower()
+        for p in room.participants:
+            if p.name.lower() in st_lower or p.id.lower() in st_lower:
+                addressed_id = p.id
+                break
+
+    if addressed_id:
+        persona_obj = next((p for p in room.participants if p.id == addressed_id), room.participants[0])
+    else:
+        p_idx = len(room.transcript) % len(room.participants)
+        persona_obj = room.participants[p_idx]
+
     pid = persona_obj.id
-
-    canned_responses: Dict[str, List[str]] = {
-        "aarav": [
-            "Looking at the data from the World Economic Forum, 85 million routine jobs will change, but 97 million new roles will be created in tech and green energy." if not is_hinglish else "WEF ke data ke mutabik 85 million jobs automate hongi par 97 million nayi roles create hongi, so net growth positive hai.",
-            "History shows that when farming was mechanized, it did not end work; it created millions of better-paying factory and office jobs." if not is_hinglish else "Historical data dekhein toh farm labor 70% se ghat kar 3% hua tha, par wages 400% badhi industrialization ki wajah se.",
-            "Reports from Goldman Sachs show AI will boost the global economy by 7%, which directly creates new local businesses and service jobs." if not is_hinglish else "Goldman Sachs estimate karta hai ki AI se global GDP 7% badhegi, jo local services me nayi jobs generate karegi."
-        ],
-        "meera": [
-            "Let us think of AI as a helpful assistant rather than a replacement. It takes away repetitive work so we can focus on creative thinking." if not is_hinglish else "AI ko replacement ki jagah co-pilot samjho. Stanford study kehti hai log routine kaam ki jagah strategy me 40% zyada time spend kar rahe hain.",
-            "Think about jobs like prompt designer or digital ethics reviewer. These roles did not even exist three years ago." if not is_hinglish else "Socho algorithmic ethics aur digital systems architecture jaise naye careers jo 3 saal pehle exist bhi nahi karte the.",
-            "When routine data work is automated, people can spend more time on healthcare, teaching, and human-centric roles." if not is_hinglish else "Jab routine tasks automate hote hain, human capital creative education aur empathetic healthcare me invest hota hai."
-        ],
-        "kabir": [
-            "That sounds positive, but OECD studies show that 27% of jobs face high risk. How do non-technical workers adapt without struggle?" if not is_hinglish else "Long term toh theek hai, par OECD 2023 report kehti hai 27% jobs high risk par hain. Short term me un workers ka kya hoga?",
-            "We must be realistic: a displaced factory worker cannot become a software engineer in just a few months." if not is_hinglish else "Hume ye nahi bhulna chahiye ki ground level par ek displaced worker 6 mahine me AI engineer nahi ban sakta.",
-            "If big tech companies take all the profits, how will local communities support workers who lose their regular jobs?" if not is_hinglish else "Agar sarra profit top tech giants me consolidate hoga, toh local workers ko support karne ke liye tax safety net kahan se aayega?"
-        ],
-        "ananya": [
-            "Kabir makes a very fair point about transition hurdles, but free reskilling grants paired with apprenticeships can bridge that gap." if not is_hinglish else "Kabir ka point valid hai transition friction par, par agar government reskilling grants de aur companies apprenticeship de, toh ye gap bridge ho sakta hai.",
-            "Looking at both sides, the best solution is giving workers financial support while training them in modern digital tools." if not is_hinglish else "Dono sides ko dekh kar, Nordic model jaise active labor policies aur transition security hi best practical solution hai.",
-            "Aarav shows the long-term growth, and Kabir shows the immediate pain. The real answer is managing the transition speed carefully." if not is_hinglish else "Aarav ka data aur Kabir ka concern combine karein toh speed of transition hi asli challenge hai, jisko policy se solve kiya ja sakta hai."
-        ],
-        "rohan": [
-            "In the global economy, nations and companies that hesitate to adopt AI will quickly fall behind international competitors." if not is_hinglish else "Geopolitical reality simple hai: jo desh AI adopt karne me delay karega, woh global market me peeche chhoot jayega.",
-            "Instead of fearing job cuts, colleges must update their syllabus immediately to equip students with practical skills." if not is_hinglish else "Hume execution speed badhani hogi. Proactive curriculum update hi hamara sabse strong defense hai.",
-            "We cannot afford to delay progress out of fear. Fast execution and practical training are our greatest advantages." if not is_hinglish else "Fear of disruption ki wajah se leadership lose nahi kar sakte. Scale par skilling karna hi national priority hona chahiye."
-        ]
-    }
-
-    responses_list = canned_responses.get(pid, canned_responses["aarav"])
-    ai_text = responses_list[len(room.transcript) % len(responses_list)]
+    ai_text = generate_contextual_ai_response(
+        room=room,
+        pid=pid,
+        student_text=student_text,
+        is_hinglish=is_hinglish,
+        is_addressed=(addressed_id is not None)
+    )
 
     ai_turn = room.add_turn(
         speaker_id=pid,
@@ -311,7 +451,7 @@ def advance_mock_turn(
         t_ms=now_ms
     )
 
-    next_actor: str = "ai" if room.consecutive_ai_turns < 2 else "student"
+    next_actor: str = "student" if addressed_id else ("ai" if room.consecutive_ai_turns < 2 else "student")
 
     return NextTurnResponse(
         turn=TurnDetail(
