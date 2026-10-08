@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GD Arena - Live Voice AI Discussion Playground</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.2);
+      --student: #10b981;
+      --mod: #f59e0b;
+      --ai: #818cf8;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
+    .container { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+    
+    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
+    .logo { font-size: 1.5rem; font-weight: bold; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+    .badge { font-size: 0.75rem; background: #3b82f6; padding: 3px 8px; border-radius: 999px; text-transform: uppercase; }
+    
+    .panel-setup { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
+    .control-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; }
+    label { font-size: 0.85rem; color: var(--muted); }
+    select, input { background: #0f172a; border: 1px solid var(--border); color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 0.95rem; }
+    
+    button { background: #2563eb; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+    button:hover { background: #1d4ed8; transform: translateY(-1px); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    button.danger { background: var(--danger); }
+    button.danger:hover { background: #dc2626; }
+    button.mic-btn { background: #059669; font-size: 1.1rem; padding: 14px 28px; border-radius: 999px; }
+    button.mic-btn.recording { background: var(--danger); animation: pulse 1.5s infinite; }
+    
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+
+    .arena-main { display: grid; grid-template-columns: 280px 1fr; gap: 20px; }
+    @media (max-width: 768px) { .arena-main { grid-template-columns: 1fr; } }
+    
+    .panel-participants { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .participant-card { background: #0f172a; border: 1px solid var(--border); border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px; }
+    .participant-card.speaking { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+    .p-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem; }
+    .p-mod { background: #b45309; }
+    .p-ai { background: #4f46e5; }
+    .p-student { background: #047857; }
+    .p-info { flex: 1; }
+    .p-name { font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .p-role { font-size: 0.75rem; color: var(--muted); }
+
+    .discussion-pane { background: var(--card); border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; height: 500px; overflow: hidden; }
+    .transcript-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+    
+    .turn-bubble { padding: 12px 16px; border-radius: 12px; max-width: 85%; font-size: 0.95rem; line-height: 1.5; }
+    .turn-bubble.moderator { background: rgba(245, 158, 11, 0.15); border-left: 4px solid var(--mod); align-self: flex-start; }
+    .turn-bubble.student { background: rgba(16, 185, 129, 0.15); border-right: 4px solid var(--student); align-self: flex-end; }
+    .turn-bubble.participant { background: rgba(129, 140, 248, 0.15); border-left: 4px solid var(--ai); align-self: flex-start; }
+    .turn-header { font-size: 0.75rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; display: flex; justify-content: space-between; gap: 10px; }
+    .interrupted-tag { color: var(--danger); font-size: 0.7rem; font-weight: bold; }
+
+    .interaction-bar { padding: 15px 20px; background: #0f172a; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+    .live-stt-text { flex: 1; font-size: 0.9rem; color: #cbd5e1; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Report Modal */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
+    .modal-content { background: var(--card); border: 1px solid var(--border); border-radius: 16px; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; gap: 20px; }
+    .score-circle { width: 90px; height: 90px; border-radius: 50%; border: 4px solid var(--accent); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: bold; margin: 0 auto; color: var(--accent); }
+    .criteria-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    @media (max-width: 600px) { .criteria-grid { grid-template-columns: 1fr; } }
+    .crit-card { background: #0f172a; border: 1px solid var(--border); padding: 12px; border-radius: 8px; font-size: 0.85rem; }
+    .crit-title { font-weight: bold; display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .quote-box { background: rgba(56, 189, 248, 0.08); border-left: 3px solid var(--accent); padding: 6px 10px; margin-top: 6px; font-size: 0.8rem; font-style: italic; color: #e2e8f0; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo">
+      🎙️ GD Arena <span class="badge">Voice AI Trainer</span>
+    </div>
+    <div style="font-size: 0.85rem; color: var(--muted);">
+      PS2: Group Discussion Practice Room
+    </div>
+  </header>
+
+  <!-- Setup Bar -->
+  <div class="panel-setup" id="setupSection">
+    <div class="control-group">
+      <label>Discussion Topic</label>
+      <select id="topicSelect">
+        <option value="Will AI Create More Jobs Than It Destroys?">Will AI Create More Jobs Than It Destroys?</option>
+        <option value="Case Study: NovaTech Crisis - 30% Layoffs vs. 15% Salary Cuts">Case: NovaTech Crisis (Layoffs vs Cuts)</option>
+        <option value="Abstract: Silence is More Eloquent Than Words">Abstract: Silence is More Eloquent Than Words</option>
+        <option value="Controversial: Should Maximum Personal Wealth Be Capped at $1 Billion?">Controversial: Wealth Cap at $1B</option>
+        <option value="Remote Work vs. Return to Office: The Future of Collaboration">Remote Work vs. Return to Office</option>
+      </select>
+    </div>
+    <div class="control-group" style="max-width: 140px;">
+      <label>Language</label>
+      <select id="langSelect">
+        <option value="en">English</option>
+        <option value="hinglish">Hinglish</option>
+      </select>
+    </div>
+    <div class="control-group" style="max-width: 130px;">
+      <label>Format</label>
+      <select id="formatSelect">
+        <option value="standard">Standard</option>
+        <option value="case_based">Case-Based</option>
+        <option value="abstract">Abstract</option>
+        <option value="controversial">Controversial</option>
+        <option value="fishbowl">Fishbowl</option>
+      </select>
+    </div>
+    <div class="control-group" style="max-width: 110px;">
+      <label>Panel Size</label>
+      <select id="panelSizeSelect">
+        <option value="4" selected>4 AI + Mod</option>
+        <option value="3">3 AI + Mod</option>
+        <option value="5">5 AI + Mod</option>
+      </select>
+    </div>
+    <button id="startBtn">🚀 Start Discussion</button>
+  </div>
+
+  <!-- Main Arena -->
+  <div class="arena-main" id="arenaSection" style="display:none;">
+    <!-- Left Column: Participants -->
+    <div class="panel-participants">
+      <h3 style="font-size: 1rem; color: var(--muted); text-transform: uppercase;">Participants</h3>
+      <div id="participantsList" style="display: flex; flex-direction: column; gap: 10px;"></div>
+      <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid var(--border);">
+        <button id="endBtn" class="danger" style="width: 100%;">🏁 End & Get Report</button>
+      </div>
+    </div>
+
+    <!-- Right Column: Live Transcript & Interaction -->
+    <div class="discussion-pane">
+      <div class="transcript-box" id="transcriptBox"></div>
+
+      <!-- Interaction bar with Mic and Interruption -->
+      <div class="interaction-bar">
+        <div id="liveStt" class="live-stt-text">Hold or click 'Hold to Speak' to contribute...</div>
+        <button id="micBtn" class="mic-btn">🎙️ Speak (Hold/Click)</button>
+        <button id="interruptBtn" class="danger" style="display:none;">✋ Interrupt</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Report Modal -->
+<div class="modal-overlay" id="reportModal">
+  <div class="modal-content">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h2>📊 GD Performance Report</h2>
+      <button onclick="document.getElementById('reportModal').style.display='none'">✕ Close</button>
+    </div>
+
+    <div class="score-circle">
+      <span id="repScore">--</span>
+      <span style="font-size: 0.65rem; color: var(--muted); text-transform: uppercase;">Overall</span>
+    </div>
+
+    <p id="repSummary" style="font-size: 0.95rem; line-height: 1.5; color: #cbd5e1;"></p>
+
+    <!-- Metrics -->
+    <div style="background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+      <h4 style="font-size: 0.85rem; color: var(--muted); margin-bottom: 8px;">SPEAKING TIME SHARE</h4>
+      <div id="speakingShare" style="display: flex; flex-wrap: wrap; gap: 15px; font-size: 0.85rem;"></div>
+    </div>
+
+    <!-- Criteria with Verified Quotes -->
+    <div>
+      <h4 style="font-size: 0.9rem; margin-bottom: 10px; color: var(--accent);">EVALUATED COMPETENCIES (VERIFIED QUOTES)</h4>
+      <div class="criteria-grid" id="criteriaGrid"></div>
+    </div>
+
+    <!-- What you could have said -->
+    <div id="replaySection" style="background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+      <h4 style="font-size: 0.85rem; color: #f59e0b; margin-bottom: 8px;">💡 WHAT YOU COULD HAVE SAID (MISSED OPENINGS)</h4>
+      <div id="replayList" style="display: flex; flex-direction: column; gap: 10px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentRoomId = null;
+  let activeTurnId = null;
+  let isRecording = false;
+  let recognition = null;
+  let accumulatedTranscript = '';
+  let activeSpeakers = {};
+
+  // Check Web Speech API
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          accumulatedTranscript += ' ' + event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      document.getElementById('liveStt').innerText = (accumulatedTranscript + ' ' + interim).trim();
+    };
+
+    recognition.onerror = (event) => {
+      console.warn('Speech recognition error:', event.error);
+    };
+  } else {
+    document.getElementById('liveStt').innerText = 'Web Speech STT not supported in this browser. Please type or use Chrome/Edge.';
+  }
+
+  // Voice synthesis helper
+  function speakTurn(text, voiceHint, onEndCallback) {
+    if (!('speechSynthesis' in window)) {
+      if (onEndCallback) onEndCallback();
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.pitch = voiceHint ? voiceHint.pitch : 1.0;
+    utterance.rate = voiceHint ? voiceHint.rate : 1.0;
+
+    // Pick a browser voice matching gender hint if available
+    const voices = window.speechSynthesis.getVoices();
+    if (voiceHint && voices.length > 0) {
+      const match = voices.find(v => 
+        (voiceHint.gender_hint === 'female' ? /female|woman|zira|susan|kavya/i.test(v.name) : /male|man|david|rishi/i.test(v.name))
+      );
+      if (match) utterance.voice = match;
+    }
+
+    utterance.onend = () => {
+      highlightSpeaking(null);
+      document.getElementById('interruptBtn').style.display = 'none';
+      if (onEndCallback) onEndCallback();
+    };
+
+    document.getElementById('interruptBtn').style.display = 'inline-flex';
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function highlightSpeaking(speakerId) {
+    document.querySelectorAll('.participant-card').forEach(el => {
+      el.classList.remove('speaking');
+    });
+    if (speakerId) {
+      const el = document.getElementById('pcard-' + speakerId);
+      if (el) el.classList.add('speaking');
+    }
+  }
+
+  function appendBubble(role, speakerName, text, interrupted = false) {
+    const box = document.getElementById('transcriptBox');
+    const b = document.createElement('div');
+    b.className = 'turn-bubble ' + (role || 'participant');
+    b.innerHTML = `
+      <div class="turn-header">
+        <span>${speakerName}</span>
+        ${interrupted ? '<span class="interrupted-tag">INTERRUPTED</span>' : ''}
+      </div>
+      <div>${text}</div>
+    `;
+    box.appendChild(b);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  // Start Discussion Room
+  document.getElementById('startBtn').addEventListener('click', async () => {
+    const topic = document.getElementById('topicSelect').value;
+    const language = document.getElementById('langSelect').value;
+    const format = document.getElementById('formatSelect').value;
+    const panel_size = parseInt(document.getElementById('panelSizeSelect').value);
+
+    document.getElementById('startBtn').disabled = true;
+
+    try {
+      const res = await fetch('/api/rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic, language, format, panel_size, student_id: 'student_web_live' })
+      });
+      const data = await res.json();
+      currentRoomId = data.room_id;
+
+      // Render participants
+      renderParticipants(data.moderator, data.participants);
+
+      document.getElementById('setupSection').style.display = 'none';
+      document.getElementById('arenaSection').style.display = 'grid';
+
+      // Advance Turn 1 (Moderator Opening)
+      advanceTurn();
+    } catch (err) {
+      alert('Error creating room: ' + err);
+      document.getElementById('startBtn').disabled = false;
+    }
+  });
+
+  function renderParticipants(mod, list) {
+    const box = document.getElementById('participantsList');
+    box.innerHTML = '';
+
+    // Student card
+    box.innerHTML += `
+      <div class="participant-card" id="pcard-student">
+        <div class="p-avatar p-student">You</div>
+        <div class="p-info">
+          <div class="p-name">You</div>
+          <div class="p-role">Student Discussant</div>
+        </div>
+      </div>
+    `;
+
+    // Moderator card
+    box.innerHTML += `
+      <div class="participant-card" id="pcard-moderator">
+        <div class="p-avatar p-mod">M</div>
+        <div class="p-info">
+          <div class="p-name">${mod.name} <span class="badge" style="background:#f59e0b;font-size:0.6rem;">MOD</span></div>
+          <div class="p-role">Facilitator</div>
+        </div>
+      </div>
+    `;
+    activeSpeakers['moderator'] = mod;
+
+    // AI Participants
+    list.forEach(p => {
+      activeSpeakers[p.id] = p;
+      box.innerHTML += `
+        <div class="participant-card" id="pcard-${p.id}">
+          <div class="p-avatar p-ai">${p.name[0]}</div>
+          <div class="p-info">
+            <div class="p-name">${p.name} <span class="badge" style="background:#6366f1;font-size:0.6rem;">AI</span></div>
+            <div class="p-role">${p.persona.split('(')[0]}</div>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  // Advance turn loop
+  async function advanceTurn(studentText = null, interruptedId = null) {
+    if (!currentRoomId) return;
+
+    try {
+      const payload = {};
+      if (studentText) {
+        payload.student_text = studentText;
+      }
+      if (interruptedId) {
+        payload.interrupted_turn_id = interruptedId;
+      }
+
+      const res = await fetch(`/api/rooms/${currentRoomId}/next`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (data.nudge) {
+        document.getElementById('liveStt').innerText = '💡 Nudge: ' + data.nudge;
+      }
+
+      if (data.turn) {
+        activeTurnId = data.turn.id;
+        const speaker = activeSpeakers[data.turn.speaker_id] || { name: data.turn.speaker_name, role: data.turn.role };
+        appendBubble(data.turn.role, data.turn.speaker_name, data.turn.text, false);
+        highlightSpeaking(data.turn.speaker_id);
+
+        speakTurn(data.turn.text, data.turn.voice, () => {
+          // If next actor is AI, advance again
+          if (data.next_actor === 'ai') {
+            setTimeout(() => { advanceTurn(); }, 1200);
+          } else {
+            document.getElementById('liveStt').innerText = "The floor is yours! Click 'Speak' to respond.";
+          }
+        });
+      } else {
+        highlightSpeaking(null);
+        document.getElementById('liveStt').innerText = "The floor is open. Click 'Speak' when ready.";
+      }
+    } catch (err) {
+      console.error('Error advancing turn:', err);
+    }
+  }
+
+  // Toggle Microphone
+  const micBtn = document.getElementById('micBtn');
+  micBtn.addEventListener('click', () => {
+    if (!isRecording) {
+      startRecording();
+    } else {
+      stopRecordingAndSend();
+    }
+  });
+
+  function startRecording() {
+    isRecording = true;
+    accumulatedTranscript = '';
+    document.getElementById('liveStt').innerText = 'Listening to your speech...';
+    micBtn.classList.add('recording');
+    micBtn.innerText = '⏹️ Done Speaking';
+
+    if (recognition) {
+      try { recognition.start(); } catch (e) {}
+    }
+  }
+
+  function stopRecordingAndSend() {
+    isRecording = false;
+    micBtn.classList.remove('recording');
+    micBtn.innerText = '🎙️ Speak (Hold/Click)';
+
+    if (recognition) {
+      try { recognition.stop(); } catch (e) {}
+    }
+
+    const textToSend = accumulatedTranscript.trim();
+    if (textToSend) {
+      appendBubble('student', 'You', textToSend, false);
+      advanceTurn(textToSend);
+    }
+    accumulatedTranscript = '';
+  }
+
+  // Interruption button
+  document.getElementById('interruptBtn').addEventListener('click', () => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    document.getElementById('interruptBtn').style.display = 'none';
+    highlightSpeaking(null);
+
+    const intId = activeTurnId;
+    startRecording();
+    document.getElementById('liveStt').innerText = 'Interrupted! Speak your counter-argument now...';
+  });
+
+  // End Discussion & Show Report
+  document.getElementById('endBtn').addEventListener('click', async () => {
+    if (!currentRoomId) return;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+    try {
+      const res = await fetch(`/api/rooms/${currentRoomId}/end`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const rep = await res.json();
+      showReportModal(rep);
+    } catch (err) {
+      alert('Error ending session: ' + err);
+    }
+  });
+
+  function showReportModal(rep) {
+    document.getElementById('repScore').innerText = rep.overall_score;
+    document.getElementById('repSummary').innerText = rep.summary;
+
+    // Speaking share
+    const shareBox = document.getElementById('speakingShare');
+    shareBox.innerHTML = '';
+    for (const [spk, pct] of Object.entries(rep.metrics.speaking_share_pct)) {
+      shareBox.innerHTML += `<div><strong>${spk.toUpperCase()}:</strong> ${pct}%</div>`;
+    }
+
+    // Criteria grid
+    const critGrid = document.getElementById('criteriaGrid');
+    critGrid.innerHTML = '';
+    rep.criteria_scores.forEach(c => {
+      critGrid.innerHTML += `
+        <div class="crit-card">
+          <div class="crit-title">
+            <span>${c.criterion}</span>
+            <span style="color:#f59e0b;">★ ${c.score}/5</span>
+          </div>
+          <div>${c.feedback}</div>
+          <div class="quote-box">"${c.quote.text}"</div>
+        </div>
+      `;
+    });
+
+    // Replay
+    const replayBox = document.getElementById('replayList');
+    replayBox.innerHTML = '';
+    if (rep.what_you_could_have_said && rep.what_you_could_have_said.length > 0) {
+      rep.what_you_could_have_said.forEach(r => {
+        replayBox.innerHTML += `
+          <div style="font-size:0.85rem;">
+            <div><strong>When ${r.speaker_name} said:</strong> "${r.trigger_text}"</div>
+            <div style="color:#38bdf8;margin:3px 0;"><strong>Suggested Response:</strong> "${r.suggested_response}"</div>
+            <div style="color:#94a3b8;font-size:0.75rem;">Angle: ${r.missed_angle}</div>
+          </div>
+        `;
+      });
+    } else {
+      replayBox.innerHTML = '<div>You actively capitalized on all pivotal discussion openings!</div>';
+    }
+
+    document.getElementById('reportModal').style.display = 'flex';
+  }
+</script>
+
+</body>
+</html>

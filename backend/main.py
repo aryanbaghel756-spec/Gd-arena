@@ -1,8 +1,9 @@
+import os
 import time
 from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.exceptions import RequestValidationError
 
 from .config import LLM_PROVIDER, MOCK_MODE, FRONTEND_ORIGIN
@@ -95,6 +96,15 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 # --- Endpoints ---
+
+@app.get("/", response_class=HTMLResponse)
+@app.get("/playground", response_class=HTMLResponse)
+async def serve_playground():
+    html_path = os.path.join(os.path.dirname(__file__), "static", "playground.html")
+    if os.path.exists(html_path):
+        with open(html_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse("<h3>GD Arena Backend is running! Open /api/health or /docs.</h3>")
 
 @app.get("/api/health", response_model=HealthResponse)
 async def health_check():
