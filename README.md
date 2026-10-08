@@ -13,10 +13,12 @@ GD Arena is a voice-first AI group discussion trainer built for Problem Statemen
 - Designed and implemented multi-provider LLM abstraction architecture (Ollama, Groq, Gemini) with automatic fallback and graceful degradation.
 - Implemented 5 AI Personas (Aarav, Meera, Kabir, Ananya, Rohan) and Dr. Verma Moderator with voice synthesis parameters.
 - Implemented FastAPI backend application (`backend/main.py`) with full CORS support and standardized error formatting `{"error": {"code", "message"}}`.
-- Built in-memory room, turn, and transcript management store with interruption handling and inactivity nudges.
+- Built empirical knowledge base (`backend/facts_db.py`) injecting verified data (WEF, OECD, Stanford Bloom study) and debunking common myths to ensure fact-grounded debate.
+- Implemented Student Query Satisfaction Engine (`backend/satisfaction.py`): sessions dynamically continue until the student's questions receive clear, substantiated answers without artificial cutoffs.
+- Implemented Persistent Student Memory & Dynamic Roadmap Engine (`backend/database.py`) in SQLite: tracks mastered concepts ("isse ye aata hai"), resolves doubts, and advances skill roadmaps across sessions.
 - Built deterministic analytics engine computing speaking share percentages and word counts in code.
 - Built GD performance feedback report generator with strict programmatic transcript quote validation.
-- Created complete Pytest automated test suite (8/8 passing) and end-to-end fake discussion simulation runner (`scripts/run_fake_discussion.py`).
+- Created complete Pytest automated test suite (10/10 passing) and end-to-end evidence & memory verification runner (`scripts/run_fake_discussion.py`).
 
 ### Left
 - Frontend React UI integration (under active development in `/frontend` by teammate on second laptop against `docs/API_CONTRACT.md`).

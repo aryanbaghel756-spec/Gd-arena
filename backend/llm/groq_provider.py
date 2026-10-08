@@ -18,12 +18,14 @@ class GroqProvider(BaseLLMProvider):
         topic: str,
         recent_turns: List[Dict[str, Any]],
         available_personas: List[Dict[str, Any]],
-        phase: str
+        phase: str,
+        verified_facts: Optional[Dict[str, Any]] = None,
+        student_profile: Optional[Dict[str, Any]] = None
     ) -> Optional[Dict[str, str]]:
         if not self.api_key or "your_groq" in self.api_key:
             return None
 
-        prompt = build_turn_prompt(topic, recent_turns, available_personas, phase)
+        prompt = build_turn_prompt(topic, recent_turns, available_personas, phase, verified_facts, student_profile)
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -32,8 +34,8 @@ class GroqProvider(BaseLLMProvider):
             "model": self.model,
             "messages": [{"role": "user", "content": prompt}],
             "response_format": {"type": "json_object"},
-            "temperature": 0.7,
-            "max_tokens": 150
+            "temperature": 0.6,
+            "max_tokens": 180
         }
         try:
             async with httpx.AsyncClient(timeout=8.0) as client:
@@ -52,12 +54,13 @@ class GroqProvider(BaseLLMProvider):
     async def generate_report_scores(
         self,
         topic: str,
-        transcript: List[Dict[str, Any]]
+        transcript: List[Dict[str, Any]],
+        student_profile: Optional[Dict[str, Any]] = None
     ) -> Optional[Dict[str, Any]]:
         if not self.api_key or "your_groq" in self.api_key:
             return None
 
-        prompt = build_report_prompt(topic, transcript)
+        prompt = build_report_prompt(topic, transcript, student_profile)
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"

@@ -476,3 +476,150 @@ Concludes the discussion and generates the performance report.
 | `kabir` | Kabir | Critic | Skeptical, pokes holes in arguments, asks tough 'what if' questions | Male, pitch 0.9, rate 0.95 |
 | `ananya` | Ananya | Collaborator | Supportive, bridges opposing views, seeks common ground | Female, pitch 1.05, rate 1.0 |
 | `rohan` | Rohan | Debater | Assertive, persuasive, rhetorical devices, defends stance firmly | Male, pitch 1.0, rate 1.1 |
+
+---
+
+## 5. Advanced Endpoints: Verified Real Facts, Dynamic Satisfaction & Student Memory
+
+### 5.1 `GET /api/rooms/{id}/facts`
+Returns verified real-world empirical data points, research studies (WEF, OECD, Stanford), and debunked myths for the room's debate topic.
+
+- **Method**: `GET`
+- **Response**: `200 OK`
+```json
+{
+  "topic": "Will AI Create More Jobs Than It Destroys?",
+  "core_domains": [
+    "Labor Economics",
+    "Automation History",
+    "Cognitive vs Manual Tasks"
+  ],
+  "verified_data_points": [
+    {
+      "claim": "Net job generation vs displacement",
+      "evidence": "World Economic Forum (WEF) Future of Jobs Report estimated 85 million jobs displaced alongside 97 million new roles emerging in AI synthesis, cloud, and green tech.",
+      "source": "WEF Future of Jobs Report"
+    },
+    {
+      "claim": "Historical precedent of tech shifts",
+      "evidence": "Historical economic data from 19th-century Agricultural to Industrial revolution shows farm labor shrank from ~70% to <3%, yet real wages increased 400% through industrial diversification.",
+      "source": "US Bureau of Labor Statistics & Economic History Association"
+    }
+  ],
+  "common_myths_debunked": [
+    {
+      "myth": "AI will cause permanent 50%+ unemployment in 2 years.",
+      "reality": "Economic transitions show 'lump of labor fallacy'—the total amount of work is not fixed; novel efficiencies stimulate new demand and industries."
+    }
+  ]
+}
+```
+
+---
+
+### 5.2 `POST /api/rooms/{id}/satisfaction`
+Allows the student to explicitly signal satisfaction with the answers provided by the AI panel, or request continued inquiry.
+
+- **Method**: `POST`
+- **Request Body**:
+```json
+{
+  "is_satisfied": true,
+  "notes": "Clarified reskilling subsidy timeline"
+}
+```
+- **Response**: `200 OK`
+```json
+{
+  "room_id": "room_a1b2c3d4",
+  "is_satisfied": true,
+  "message": "Student satisfaction status recorded successfully."
+}
+```
+
+---
+
+### 5.3 `GET /api/students/{id}/profile`
+Retrieves persistent student profile, known concepts ("isse ye aata hai"), resolved queries, and personalized skill roadmap across GD sessions.
+
+- **Method**: `GET`
+- **Response**: `200 OK`
+```json
+{
+  "student_id": "student_default",
+  "name": "Student Discussant",
+  "known_concepts": [
+    "Basic Group Discussion structure and decorum",
+    "Opening statement articulation",
+    "Will AI Create More Jobs Than It Destroys?: Net job generation vs displacement"
+  ],
+  "weak_areas": [
+    "Neutralizing aggressive debaters with poise",
+    "Synthesizing high-pressure consensus"
+  ],
+  "resolved_queries": [
+    "What about transitional unemployment for non-technical workers?"
+  ],
+  "pending_queries": [],
+  "roadmap": [
+    {
+      "milestone": 1,
+      "goal": "Master Fact-Grounded Counter-Arguments",
+      "status": "completed",
+      "recommended_topic": "ai-jobs"
+    },
+    {
+      "milestone": 2,
+      "goal": "Lead Multi-Stakeholder Consensus Synthesis",
+      "status": "in_progress",
+      "recommended_topic": "remote-work"
+    },
+    {
+      "milestone": 3,
+      "goal": "Navigate High-Pressure Policy Interventions",
+      "status": "pending",
+      "recommended_topic": "social-media-regulation"
+    }
+  ],
+  "total_sessions": 2,
+  "average_score": 80.5,
+  "created_at_ms": 1728374000000,
+  "updated_at_ms": 1728374500000
+}
+```
+
+---
+
+### 5.4 `GET /api/students/{id}/roadmap`
+Convenience endpoint fetching the student's dynamic learning roadmap milestones.
+
+- **Method**: `GET`
+- **Response**: `200 OK`
+```json
+{
+  "student_id": "student_default",
+  "name": "Student Discussant",
+  "roadmap": [
+    {
+      "milestone": 1,
+      "goal": "Master Fact-Grounded Counter-Arguments",
+      "status": "completed",
+      "recommended_topic": "ai-jobs"
+    },
+    {
+      "milestone": 2,
+      "goal": "Lead Multi-Stakeholder Consensus Synthesis",
+      "status": "in_progress",
+      "recommended_topic": "remote-work"
+    }
+  ],
+  "known_concepts": [
+    "Basic Group Discussion structure and decorum",
+    "Net job generation vs displacement (WEF Data)"
+  ],
+  "weak_areas": [
+    "Neutralizing aggressive debaters with poise"
+  ]
+}
+```
+

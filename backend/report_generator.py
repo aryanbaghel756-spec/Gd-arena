@@ -1,8 +1,10 @@
+import json
 import logging
 from typing import Dict, List, Any, Optional
 from .models import EndReportResponse, Metrics, CriterionScore, QuoteRef, TranscriptTurn
 from .store import RoomState
 from .llm.router import llm_router
+from .database import get_or_create_student, update_student_progress, get_connection
 
 logger = logging.getLogger(__name__)
 
@@ -19,20 +21,14 @@ def validate_and_sanitize_quotes(
     raw_criteria: List[Dict[str, Any]],
     transcript: List[TranscriptTurn]
 ) -> List[CriterionScore]:
-    """
-    Validates that every feedback point quotes an actual turn and text in the transcript.
-    Hallucinated or mismatched quotes are corrected or replaced with authentic utterances.
-    """
     turn_map: Dict[str, TranscriptTurn] = {t.id: t for t in transcript}
     student_turns = [t for t in transcript if t.role == "student"]
     
-    # Default fallback quotes
     first_student_turn = student_turns[0] if student_turns else (transcript[0] if transcript else None)
     last_student_turn = student_turns[-1] if student_turns else (transcript[-1] if transcript else None)
 
     validated: List[CriterionScore] = []
     
-    # Convert raw to dictionary by criterion name if available
     raw_map: Dict[str, Dict[str, Any]] = {
         item.get("criterion", ""): item for item in raw_criteria if isinstance(item, dict)
     }
@@ -55,20 +51,17 @@ def validate_and_sanitize_quotes(
                 tid = raw_quote.get("turn_id", "")
                 qtext = raw_quote.get("text", "").strip()
                 
-                # Check if turn_id exists in transcript and qtext is a substring of that turn's text
                 if tid in turn_map:
                     actual_text = turn_map[tid].text
                     if qtext and (qtext.lower() in actual_text.lower() or actual_text.lower() in qtext.lower()):
                         candidate_quote = QuoteRef(turn_id=tid, text=actual_text)
 
-        # If quote is missing or invalid/hallucinated, substitute with genuine transcript turn
         if not candidate_quote:
             if crit_name == "Starting the discussion" and first_student_turn:
                 candidate_quote = QuoteRef(turn_id=first_student_turn.id, text=first_student_turn.text)
             elif crit_name == "Ending strongly" and last_student_turn:
                 candidate_quote = QuoteRef(turn_id=last_student_turn.id, text=last_student_turn.text)
             elif student_turns:
-                # Use a turn corresponding to criterion index or middle
                 idx = len(validated) % len(student_turns)
                 candidate_quote = QuoteRef(turn_id=student_turns[idx].id, text=student_turns[idx].text)
             elif transcript:
@@ -120,13 +113,14 @@ async def generate_gd_report(room: RoomState) -> EndReportResponse:
         for t in room.transcript
     ]
 
-    llm_report = await llm_router.generate_report_scores(room.topic, transcript_dicts)
+    student_profile = get_or_create_student(room.student_id)
+    llm_report = await llm_router.generate_report_scores(room.topic, transcript_dicts, student_profile)
 
     raw_criteria: List[Dict[str, Any]] = []
     overall_score = 75
     summary = (
         "Overall constructive participation. You engaged with the discussion prompts "
-        "and contributed perspective to the group dialogue."
+        "and contributed perspective grounded in practical logic."
     )
 
     if llm_report and isinstance(llm_report, dict):
@@ -142,7 +136,6 @@ async def generate_gd_report(room: RoomState) -> EndReportResponse:
     # 3. Validate & sanitize all quotes strictly against transcript
     validated_criteria = validate_and_sanitize_quotes(raw_criteria, room.transcript)
 
-    # Adjust overall score if computed from criteria
     avg_score = sum(c.score for c in validated_criteria) / max(1, len(validated_criteria))
     computed_overall = int(avg_score * 20)
     final_score = int((overall_score + computed_overall) / 2)
@@ -159,4 +152,30 @@ async def generate_gd_report(room: RoomState) -> EndReportResponse:
     )
 
     room.cached_report = report
+
+    # 4. Persist progress into Student SQLite profile and Reports table
+    try:
+        update_student_progress(
+            student_id=room.student_id,
+            session_score=final_score
+        )
+        conn = get_connection()
+        conn.execute("""
+        INSERT OR REPLACE INTO reports (room_id, student_id, topic, overall_score, summary, metrics_json, criteria_scores_json, created_at_ms)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            room.room_id,
+            room.student_id,
+            room.topic,
+            final_score,
+            summary,
+            json.dumps(metrics.model_dump()),
+            json.dumps([c.model_dump() for c in validated_criteria]),
+            room.created_at_ms
+        ))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.warning(f"Failed to persist report to SQLite: {e}")
+
     return report

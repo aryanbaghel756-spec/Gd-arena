@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from backend.main import app
 from backend.models import TranscriptTurn
 from backend.report_generator import validate_and_sanitize_quotes
+from backend.database import get_or_create_student, update_student_progress
 
 client = TestClient(app)
 
@@ -26,7 +27,8 @@ def test_create_and_get_room():
     payload = {
         "topic": "Will AI Create More Jobs Than It Destroys?",
         "panel_size": 4,
-        "language": "en"
+        "language": "en",
+        "student_id": "test_student_1"
     }
     create_res = client.post("/api/rooms", json=payload)
     assert create_res.status_code == 201
@@ -48,7 +50,6 @@ def test_create_and_get_room():
     assert isinstance(fetched["transcript"], list)
 
 def test_turn_loop_and_moderator_opening():
-    # Create room
     create_res = client.post("/api/rooms", json={
         "topic": "Will AI Create More Jobs Than It Destroys?",
         "panel_size": 3,
@@ -56,7 +57,6 @@ def test_turn_loop_and_moderator_opening():
     })
     room_id = create_res.json()["room_id"]
 
-    # Turn 1: UI calls next with no student text to get opening
     turn1_res = client.post(f"/api/rooms/{room_id}/next", json={})
     assert turn1_res.status_code == 200
     t1 = turn1_res.json()
@@ -64,7 +64,6 @@ def test_turn_loop_and_moderator_opening():
     assert t1["phase"] == "opening"
     assert t1["next_actor"] == "student"
 
-    # Turn 2: Student speaks
     student_payload = {
         "student_text": "I believe AI will create more jobs by sparking entirely new industries.",
         "student_started_ms": 1728374000000,
@@ -77,11 +76,9 @@ def test_turn_loop_and_moderator_opening():
     assert t2["turn"]["speaker_id"] in ["aarav", "meera", "kabir"]
     assert t2["phase"] == "discussion"
 
-    # Turn 3: AI played, UI calls next with no student text (cross-talk)
     turn3_res = client.post(f"/api/rooms/{room_id}/next", json={})
     assert turn3_res.status_code == 200
     t3 = turn3_res.json()
-    # Either another AI turn or floor back to student
     assert t3["next_actor"] in ["ai", "student"]
 
 def test_interruption_handling():
@@ -92,11 +89,9 @@ def test_interruption_handling():
     })
     room_id = create_res.json()["room_id"]
 
-    # Opening turn
     t1 = client.post(f"/api/rooms/{room_id}/next", json={}).json()
     interrupted_id = t1["turn"]["id"]
 
-    # Student interrupts turn_1
     student_payload = {
         "student_text": "Pardon me, but let me quickly jump in on this point.",
         "interrupted_turn_id": interrupted_id
@@ -104,7 +99,6 @@ def test_interruption_handling():
     res = client.post(f"/api/rooms/{room_id}/next", json=student_payload)
     assert res.status_code == 200
 
-    # Verify room transcript reflects interruption
     room_state = client.get(f"/api/rooms/{room_id}").json()
     transcript = room_state["transcript"]
     assert any(t["id"] == interrupted_id and t["interrupted"] is True for t in transcript)
@@ -113,19 +107,16 @@ def test_end_report_and_metrics():
     create_res = client.post("/api/rooms", json={
         "topic": "Social Media Regulation",
         "panel_size": 4,
-        "language": "en"
+        "language": "en",
+        "student_id": "test_student_2"
     })
     room_id = create_res.json()["room_id"]
 
-    # Opening
     client.post(f"/api/rooms/{room_id}/next", json={})
-
-    # Student speaks
     client.post(f"/api/rooms/{room_id}/next", json={
         "student_text": "We need balanced algorithmic accountability without excessive government censorship."
     })
 
-    # End discussion
     end_res = client.post(f"/api/rooms/{room_id}/end", json={})
     assert end_res.status_code == 200
     report = end_res.json()
@@ -136,7 +127,6 @@ def test_end_report_and_metrics():
     assert "criteria_scores" in report
     assert len(report["criteria_scores"]) == 6
 
-    # Verify every quote exists in the transcript
     transcript_res = client.get(f"/api/rooms/{room_id}").json()["transcript"]
     transcript_ids = {t["id"] for t in transcript_res}
     for item in report["criteria_scores"]:
@@ -167,7 +157,6 @@ def test_quote_sanitizer_drops_hallucinations():
         )
     ]
 
-    # Deliberate hallucinated quotes that do NOT exist in the transcript
     hallucinated_raw = [
         {
             "criterion": "Starting the discussion",
@@ -185,24 +174,74 @@ def test_quote_sanitizer_drops_hallucinations():
 
     validated = validate_and_sanitize_quotes(hallucinated_raw, fake_transcript)
     assert len(validated) == 6
-    
-    # Must be replaced with real turn_2 student quote
     for crit in validated:
         assert crit.quote.turn_id in ["turn_1", "turn_2"]
         if crit.quote.turn_id == "turn_2":
             assert crit.quote.text == "I believe we should invest in vocational education."
 
 def test_standard_error_envelope():
-    # 404 Room not found
     res404 = client.get("/api/rooms/non_existent_room_999")
     assert res404.status_code == 404
     data404 = res404.json()
     assert "error" in data404
     assert data404["error"]["code"] == "ROOM_NOT_FOUND"
 
-    # 422 Invalid panel size
     res422 = client.post("/api/rooms", json={"topic": "Test", "panel_size": 10})
     assert res422.status_code == 422
     data422 = res422.json()
     assert "error" in data422
     assert data422["error"]["code"] == "VALIDATION_ERROR"
+
+def test_verified_facts_endpoint():
+    create_res = client.post("/api/rooms", json={
+        "topic": "Will AI Create More Jobs Than It Destroys?",
+        "panel_size": 3,
+        "language": "en"
+    })
+    room_id = create_res.json()["room_id"]
+    facts_res = client.get(f"/api/rooms/{room_id}/facts")
+    assert facts_res.status_code == 200
+    facts = facts_res.json()
+    assert "verified_data_points" in facts
+    assert len(facts["verified_data_points"]) >= 2
+    assert any("World Economic Forum" in dp["evidence"] or "Historical" in dp["claim"] for dp in facts["verified_data_points"])
+    assert "common_myths_debunked" in facts
+
+def test_student_satisfaction_and_memory():
+    # 1. Check profile initial state
+    profile_res = client.get("/api/students/student_persistent_test/profile")
+    assert profile_res.status_code == 200
+    prof = profile_res.json()
+    assert prof["student_id"] == "student_persistent_test"
+    assert "known_concepts" in prof
+    assert "roadmap" in prof
+    assert len(prof["roadmap"]) >= 2
+
+    # 2. Create room with this student
+    create_res = client.post("/api/rooms", json={
+        "topic": "Will AI Create More Jobs Than It Destroys?",
+        "panel_size": 3,
+        "language": "en",
+        "student_id": "student_persistent_test"
+    })
+    room_id = create_res.json()["room_id"]
+
+    # Turn 1: Opening turn
+    client.post(f"/api/rooms/{room_id}/next", json={})
+
+    # Turn 2: Student states that they understood and are satisfied
+    client.post(f"/api/rooms/{room_id}/next", json={
+        "student_text": "I see, that makes sense. That answers my question about net job creation."
+    })
+
+    # Explicit satisfaction call
+    sat_res = client.post(f"/api/rooms/{room_id}/satisfaction", json={
+        "is_satisfied": True,
+        "notes": "Verified WEF statistics resolved my skepticism"
+    })
+    assert sat_res.status_code == 200
+    assert sat_res.json()["is_satisfied"] is True
+
+    # 3. Check updated profile has retained the knowledge
+    updated_prof = client.get("/api/students/student_persistent_test/profile").json()
+    assert any("Grasped core trade-offs" in c for c in updated_prof["known_concepts"])

@@ -14,17 +14,23 @@ from .models import (
     GetRoomResponse,
     NextTurnRequest,
     NextTurnResponse,
-    EndReportResponse
+    EndReportResponse,
+    SatisfactionRequest,
+    SatisfactionResponse,
+    FactsResponse,
+    StudentProfileResponse
 )
 from .store import room_store
 from .mock_engine import get_mock_topics, advance_mock_turn, generate_mock_report
 from .moderator import advance_room_turn
 from .report_generator import generate_gd_report
+from .facts_db import get_facts_for_topic
+from .database import get_or_create_student
 
 app = FastAPI(
     title="GD Arena API",
-    description="Voice-first group discussion trainer with AI personas and moderator (Problem Statement 2)",
-    version="1.0.0"
+    description="Voice-first group discussion trainer with AI personas, evidence-based debate, and student memory (Problem Statement 2)",
+    version="1.1.0"
 )
 
 # --- CORS Configuration ---
@@ -39,23 +45,25 @@ if FRONTEND_ORIGIN and FRONTEND_ORIGIN not in allowed_origins:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all for hackathon cross-laptop access
+    allow_origins=["*"],  # Allow cross-laptop connection
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- Error Handlers (Always return {"error": {"code", "message"}}) ---
+# --- Standard Error Handling ---
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
     code_map = {
         400: "BAD_REQUEST",
-        404: "ROOM_NOT_FOUND",
+        404: "NOT_FOUND",
         409: "CONFLICT",
         422: "VALIDATION_ERROR",
         500: "INTERNAL_ERROR"
     }
     code = code_map.get(exc.status_code, "ERROR")
+    if exc.status_code == 404 and "Room" in str(exc.detail):
+        code = "ROOM_NOT_FOUND"
     message = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
     return JSONResponse(
         status_code=exc.status_code,
@@ -86,7 +94,7 @@ async def general_exception_handler(request: Request, exc: Exception):
         }
     )
 
-# --- API Endpoints ---
+# --- Endpoints ---
 
 @app.get("/api/health", response_model=HealthResponse)
 async def health_check():
@@ -107,7 +115,8 @@ async def create_room(req: CreateRoomRequest):
     room = room_store.create_room(
         topic=req.topic,
         panel_size=req.panel_size,
-        language=req.language
+        language=req.language,
+        student_id=req.student_id or "student_default"
     )
     return CreateRoomResponse(
         room_id=room.room_id,
@@ -116,7 +125,8 @@ async def create_room(req: CreateRoomRequest):
         duration_sec=room.duration_sec,
         created_at_ms=room.created_at_ms,
         moderator=room.moderator,
-        participants=room.participants
+        participants=room.participants,
+        student_id=room.student_id
     )
 
 @app.get("/api/rooms/{id}", response_model=GetRoomResponse)
@@ -165,3 +175,48 @@ async def end_room(id: str):
         return generate_mock_report(room)
 
     return await generate_gd_report(room)
+
+# --- Advanced Endpoints: Facts, Satisfaction & Student Memory ---
+
+@app.get("/api/rooms/{id}/facts", response_model=FactsResponse)
+async def get_room_facts(id: str):
+    room = room_store.get_room(id)
+    if not room:
+        raise HTTPException(status_code=404, detail=f"Room '{id}' was not found.")
+    facts = get_facts_for_topic(room.topic)
+    return FactsResponse(
+        topic=room.topic,
+        core_domains=facts.get("core_domains", []),
+        verified_data_points=facts.get("verified_data_points", []),
+        common_myths_debunked=facts.get("common_myths_debunked", [])
+    )
+
+@app.post("/api/rooms/{id}/satisfaction", response_model=SatisfactionResponse)
+async def mark_satisfaction(id: str, req: SatisfactionRequest):
+    room = room_store.get_room(id)
+    if not room:
+        raise HTTPException(status_code=404, detail=f"Room '{id}' was not found.")
+    room.is_satisfied = req.is_satisfied
+    if req.notes:
+        room.satisfaction_notes = req.notes
+    return SatisfactionResponse(
+        room_id=room.room_id,
+        is_satisfied=room.is_satisfied,
+        message="Student satisfaction status recorded successfully."
+    )
+
+@app.get("/api/students/{id}/profile", response_model=StudentProfileResponse)
+async def get_student_profile(id: str):
+    profile = get_or_create_student(id)
+    return StudentProfileResponse(**profile)
+
+@app.get("/api/students/{id}/roadmap")
+async def get_student_roadmap(id: str):
+    profile = get_or_create_student(id)
+    return {
+        "student_id": id,
+        "name": profile["name"],
+        "roadmap": profile["roadmap"],
+        "known_concepts": profile["known_concepts"],
+        "weak_areas": profile["weak_areas"]
+    }

@@ -17,15 +17,17 @@ class OllamaProvider(BaseLLMProvider):
         topic: str,
         recent_turns: List[Dict[str, Any]],
         available_personas: List[Dict[str, Any]],
-        phase: str
+        phase: str,
+        verified_facts: Optional[Dict[str, Any]] = None,
+        student_profile: Optional[Dict[str, Any]] = None
     ) -> Optional[Dict[str, str]]:
-        prompt = build_turn_prompt(topic, recent_turns, available_personas, phase)
+        prompt = build_turn_prompt(topic, recent_turns, available_personas, phase, verified_facts, student_profile)
         payload = {
             "model": self.model,
             "prompt": prompt,
             "stream": False,
             "format": "json",
-            "options": {"temperature": 0.7, "num_predict": 150}
+            "options": {"temperature": 0.6, "num_predict": 180}
         }
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
@@ -42,15 +44,16 @@ class OllamaProvider(BaseLLMProvider):
     async def generate_report_scores(
         self,
         topic: str,
-        transcript: List[Dict[str, Any]]
+        transcript: List[Dict[str, Any]],
+        student_profile: Optional[Dict[str, Any]] = None
     ) -> Optional[Dict[str, Any]]:
-        prompt = build_report_prompt(topic, transcript)
+        prompt = build_report_prompt(topic, transcript, student_profile)
         payload = {
             "model": self.model,
             "prompt": prompt,
             "stream": False,
             "format": "json",
-            "options": {"temperature": 0.3, "num_predict": 500}
+            "options": {"temperature": 0.3, "num_predict": 600}
         }
         try:
             async with httpx.AsyncClient(timeout=20.0) as client:

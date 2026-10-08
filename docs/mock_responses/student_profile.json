@@ -1,0 +1,41 @@
+{
+  "student_id": "student_default",
+  "name": "Student Discussant",
+  "known_concepts": [
+    "Basic Group Discussion structure and decorum",
+    "Opening statement articulation",
+    "Will AI Create More Jobs Than It Destroys?: Net job generation vs displacement"
+  ],
+  "weak_areas": [
+    "Neutralizing aggressive debaters with poise",
+    "Synthesizing high-pressure consensus"
+  ],
+  "resolved_queries": [
+    "What about transitional unemployment for non-technical workers?"
+  ],
+  "pending_queries": [],
+  "roadmap": [
+    {
+      "milestone": 1,
+      "goal": "Master Fact-Grounded Counter-Arguments",
+      "status": "completed",
+      "recommended_topic": "ai-jobs"
+    },
+    {
+      "milestone": 2,
+      "goal": "Lead Multi-Stakeholder Consensus Synthesis",
+      "status": "in_progress",
+      "recommended_topic": "remote-work"
+    },
+    {
+      "milestone": 3,
+      "goal": "Navigate High-Pressure Policy Interventions",
+      "status": "pending",
+      "recommended_topic": "social-media-regulation"
+    }
+  ],
+  "total_sessions": 2,
+  "average_score": 80.5,
+  "created_at_ms": 1728374000000,
+  "updated_at_ms": 1728374500000
+}

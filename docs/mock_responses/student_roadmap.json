@@ -1,0 +1,32 @@
+{
+  "student_id": "student_default",
+  "name": "Student Discussant",
+  "roadmap": [
+    {
+      "milestone": 1,
+      "goal": "Master Fact-Grounded Counter-Arguments",
+      "status": "completed",
+      "recommended_topic": "ai-jobs"
+    },
+    {
+      "milestone": 2,
+      "goal": "Lead Multi-Stakeholder Consensus Synthesis",
+      "status": "in_progress",
+      "recommended_topic": "remote-work"
+    },
+    {
+      "milestone": 3,
+      "goal": "Navigate High-Pressure Policy Interventions",
+      "status": "pending",
+      "recommended_topic": "social-media-regulation"
+    }
+  ],
+  "known_concepts": [
+    "Basic Group Discussion structure and decorum",
+    "Opening statement articulation",
+    "Net job generation vs displacement (WEF Data)"
+  ],
+  "weak_areas": [
+    "Neutralizing aggressive debaters with poise"
+  ]
+}

@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Literal
+from typing import List, Optional, Dict, Literal, Any
 from pydantic import BaseModel, Field
 
 # --- Standard Error ---
@@ -19,7 +19,7 @@ class HealthResponse(BaseModel):
     timestamp: str
 
 
-# --- Topics ---
+# --- Topics & Verified Facts ---
 class Topic(BaseModel):
     id: str
     title: str
@@ -30,6 +30,21 @@ class Topic(BaseModel):
 
 class TopicsResponse(BaseModel):
     topics: List[Topic]
+
+class FactDataPoint(BaseModel):
+    claim: str
+    evidence: str
+    source: str
+
+class MythDebunk(BaseModel):
+    myth: str
+    reality: str
+
+class FactsResponse(BaseModel):
+    topic: str
+    core_domains: List[str]
+    verified_data_points: List[FactDataPoint]
+    common_myths_debunked: List[MythDebunk]
 
 
 # --- Voice & Participants ---
@@ -52,6 +67,7 @@ class CreateRoomRequest(BaseModel):
     topic: str
     panel_size: int = Field(ge=3, le=5, default=4)
     language: Literal["en", "hinglish"] = "en"
+    student_id: Optional[str] = "student_default"
 
 class CreateRoomResponse(BaseModel):
     room_id: str
@@ -61,6 +77,7 @@ class CreateRoomResponse(BaseModel):
     created_at_ms: int
     moderator: Participant
     participants: List[Participant]
+    student_id: Optional[str] = "student_default"
 
 class TranscriptTurn(BaseModel):
     id: str
@@ -134,3 +151,33 @@ class EndReportResponse(BaseModel):
     summary: str
     metrics: Metrics
     criteria_scores: List[CriterionScore]
+
+
+# --- Student Profile & Satisfaction ---
+class SatisfactionRequest(BaseModel):
+    is_satisfied: bool = True
+    notes: Optional[str] = None
+
+class SatisfactionResponse(BaseModel):
+    room_id: str
+    is_satisfied: bool
+    message: str
+
+class RoadmapMilestone(BaseModel):
+    milestone: int
+    goal: str
+    status: str
+    recommended_topic: str
+
+class StudentProfileResponse(BaseModel):
+    student_id: str
+    name: str
+    known_concepts: List[str]
+    weak_areas: List[str]
+    resolved_queries: List[str]
+    pending_queries: List[str]
+    roadmap: List[RoadmapMilestone]
+    total_sessions: int
+    average_score: float
+    created_at_ms: int
+    updated_at_ms: int

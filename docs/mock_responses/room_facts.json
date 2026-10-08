@@ -1,0 +1,31 @@
+{
+  "topic": "Will AI Create More Jobs Than It Destroys?",
+  "core_domains": [
+    "Labor Economics",
+    "Automation History",
+    "Cognitive vs Manual Tasks"
+  ],
+  "verified_data_points": [
+    {
+      "claim": "Net job generation vs displacement",
+      "evidence": "World Economic Forum (WEF) Future of Jobs Report estimated 85 million jobs displaced alongside 97 million new roles emerging in AI synthesis, cloud, and green tech.",
+      "source": "WEF Future of Jobs Report"
+    },
+    {
+      "claim": "Historical precedent of tech shifts",
+      "evidence": "Historical economic data from 19th-century Agricultural to Industrial revolution shows farm labor shrank from ~70% to <3%, yet real wages increased 400% through industrial diversification.",
+      "source": "US Bureau of Labor Statistics & Economic History Association"
+    },
+    {
+      "claim": "Cognitive displacement timeline",
+      "evidence": "OECD 2023 Employment Outlook found 27% of jobs are in occupations at high risk of automation, primarily in repetitive administrative and basic code synthesis.",
+      "source": "OECD Employment Outlook 2023"
+    }
+  ],
+  "common_myths_debunked": [
+    {
+      "myth": "AI will cause permanent 50%+ unemployment in 2 years.",
+      "reality": "Economic transitions show 'lump of labor fallacy'—the total amount of work is not fixed; novel efficiencies stimulate new demand and industries."
+    }
+  ]
+}

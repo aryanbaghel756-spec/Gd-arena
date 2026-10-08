@@ -34,7 +34,9 @@ class LLMRouter:
         topic: str,
         recent_turns: List[Dict[str, Any]],
         available_personas: List[Dict[str, Any]],
-        phase: str
+        phase: str,
+        verified_facts: Optional[Dict[str, Any]] = None,
+        student_profile: Optional[Dict[str, Any]] = None
     ) -> tuple[Optional[Dict[str, str]], str, bool]:
         """
         Attempts generation using provider chain.
@@ -43,9 +45,15 @@ class LLMRouter:
         chain = self._get_provider_chain()
         for name, provider in chain:
             try:
-                res = await provider.generate_turn(topic, recent_turns, available_personas, phase)
+                res = await provider.generate_turn(
+                    topic=topic,
+                    recent_turns=recent_turns,
+                    available_personas=available_personas,
+                    phase=phase,
+                    verified_facts=verified_facts,
+                    student_profile=student_profile
+                )
                 if res and "speaker" in res and "text" in res:
-                    # Validate that speaker is in available personas or moderator
                     valid_ids = {p["id"] for p in available_personas} | {"moderator"}
                     if res["speaker"] not in valid_ids:
                         res["speaker"] = available_personas[0]["id"]
@@ -59,12 +67,17 @@ class LLMRouter:
     async def generate_report_scores(
         self,
         topic: str,
-        transcript: List[Dict[str, Any]]
+        transcript: List[Dict[str, Any]],
+        student_profile: Optional[Dict[str, Any]] = None
     ) -> Optional[Dict[str, Any]]:
         chain = self._get_provider_chain()
         for name, provider in chain:
             try:
-                res = await provider.generate_report_scores(topic, transcript)
+                res = await provider.generate_report_scores(
+                    topic=topic,
+                    transcript=transcript,
+                    student_profile=student_profile
+                )
                 if res and "criteria_scores" in res:
                     return res
             except Exception as e:
