@@ -28,6 +28,8 @@ interface CoPilotHUDProps {
   participants: Participant[];
   transcripts: TranscriptItem[];
   topicFacts?: TopicFacts | null;
+  isStudentSatisfied?: boolean;
+  onToggleSatisfaction?: (satisfied: boolean) => void;
   onAdoptPrompt: (text: string) => void;
   className?: string;
 }
@@ -39,6 +41,8 @@ export function CoPilotHUD({
   participants,
   transcripts,
   topicFacts,
+  isStudentSatisfied = false,
+  onToggleSatisfaction,
   onAdoptPrompt,
   className = '',
 }: CoPilotHUDProps) {
@@ -101,6 +105,7 @@ export function CoPilotHUD({
   const getTacticalWhisper = (): {
     headline: string;
     advice: string;
+    hinglishTip: string;
     suggestedSpeakingText: string;
     badge: string;
   } => {
@@ -110,6 +115,7 @@ export function CoPilotHUD({
       return {
         headline: '⚡ Seize the Opening Framing Advantage',
         advice: 'GD evaluators award maximum marks for initiating with a crisp, 2-dimensional scope rather than vague generalizations.',
+        hinglishTip: '💡 Shuruat Kaise Karein: Pehle 30 second mein command lo aur topic ko 2 hisso mein baanto (Immediate feasibility vs Long-term impact). Isse leadership score badhta hai.',
         suggestedSpeakingText: `Thank you Moderator. I would like to structure today's discussion on '${topic.title}' across two primary dimensions: first, immediate empirical feasibility, and second, long-term systemic sustainability. As ${firstFact?.source || 'official data'} demonstrates, ${firstFact?.claim || 'evidence shows measurable trade-offs'}, which we must balance today.`,
         badge: 'Opening Strategy'
       };
@@ -120,6 +126,7 @@ export function CoPilotHUD({
       return {
         headline: '🏁 Consensus Synthesis & Strategic Verdict',
         advice: 'Do not introduce new arguments. Unify competing perspectives and formulate an actionable consensus framework.',
+        hinglishTip: '💡 Conclusion Kaise Karein: Koi naya argument mat lao. Dono opposing sides ke points ko milakar ek realistic solution do.',
         suggestedSpeakingText: `To synthesize our discussion, while there are valid concerns regarding immediate execution friction, the empirical consensus points toward a balanced hybrid doctrine: maintaining rigorous institutional guardrails while empowering flexible stakeholder innovation.`,
         badge: 'Closing Mastery'
       };
@@ -133,6 +140,7 @@ export function CoPilotHUD({
       return {
         headline: '🎯 Countering Execution Skepticism',
         advice: `${activeSpeaker?.name || 'The Critic'} raised valid friction points. Acknowledge their risk concern, then pivot with institutional data to prove feasibility.`,
+        hinglishTip: `💡 Kabir ko Counter Karo: Kabir ke risk point ko accept karo, phir data se prove karo ki safeguards hone par faayda zyada hai.`,
         suggestedSpeakingText: `I completely agree with the risk highlighted regarding execution bottlenecks. However, empirical findings show that when structured safeguards are put in place—as demonstrated by ${evidence}—the downside risk is mitigated while preserving long-term upside.`,
         badge: 'Address Critic'
       };
@@ -142,6 +150,7 @@ export function CoPilotHUD({
       return {
         headline: '🛡️ Reclaiming Floor from Aggressive Tempo',
         advice: `${activeSpeaker?.name || 'The speaker'} is asserting ungrounded opinions. Use a polite assertion formula to re-ground the panel on verified facts.`,
+        hinglishTip: `💡 Vikram ko Intervene Karo: Vikram bina data ke bol raha hai. Beech mein politely bolo: "Allow me 15 seconds to add verified data".`,
         suggestedSpeakingText: `Allow me 15 seconds to bridge this point with verified data. If we look at the institutional evidence rather than sentiment, the numbers clearly indicate that sustainable growth requires disciplined governance over short-term speculation.`,
         badge: 'Polite Intervention'
       };
@@ -151,6 +160,7 @@ export function CoPilotHUD({
       return {
         headline: '🤝 Grounding Creative Analogies in Practical Reality',
         advice: `${activeSpeaker?.name || 'The Creative'} offered a lateral perspective. Validate their creative angle and tie it directly back to the core operational metric.`,
+        hinglishTip: `💡 Creative Angle ko Jodo: Creative point ko appreciate karo aur phir ground reality ke practical solution se connect karo.`,
         suggestedSpeakingText: `That is an insightful parallel. Translating that creative concept into our current challenge, it means we can pilot decentralized solutions while keeping regulatory compliance transparent.`,
         badge: 'Collaborative Bridge'
       };
@@ -160,6 +170,7 @@ export function CoPilotHUD({
       return {
         headline: '🌟 Inclusivity & Leadership Score Booster',
         advice: 'Evaluating panels rate candidates highly when they synthesize a quieter peer\'s input. Build on their observation.',
+        hinglishTip: `💡 Maya ko Include Karo: Shaant baithe participant ka point support karo—judges inclusivity ke high marks dete hain.`,
         suggestedSpeakingText: `Building directly on the subtle nuance raised earlier, we must ensure our policy does not overlook ordinary end-users in the transition.`,
         badge: 'Panel Awareness'
       };
@@ -170,6 +181,7 @@ export function CoPilotHUD({
     return {
       headline: '📊 Quantitative Substantiation Pivot',
       advice: 'The discussion is data-driven. Back up your next contribution with verified institutional figures to establish undeniable authority.',
+      hinglishTip: `💡 Aarav ke Data par Bolo: Numbers ko agree karo aur uske sath human/social impact ka angle add karke lead lo.`,
       suggestedSpeakingText: `To add empirical weight to what has been said, ${fact?.source} documented that ${fact?.evidence || 'structured empirical metrics outperform intuitive assumptions'}. This proves our premise is both scalable and economically viable.`,
       badge: 'Empirical Anchor'
     };
@@ -284,6 +296,41 @@ export function CoPilotHUD({
       {isExpanded && (
         <div className="p-4 space-y-3">
           
+          {/* STUDENT DOUBT RESOLUTION & CONTINUATION STATUS */}
+          <div className="p-2.5 rounded-xl bg-[#140812] border border-[#ff1e2d]/30 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+            <div className="flex items-center gap-2">
+              <span className={`w-2.5 h-2.5 rounded-full ${isStudentSatisfied ? 'bg-emerald-400' : 'bg-amber-400 animate-ping'}`} />
+              <span className="font-mono text-zinc-300">
+                <strong className={isStudentSatisfied ? 'text-emerald-300' : 'text-amber-300'}>
+                  {isStudentSatisfied ? '✅ Concept Clear:' : '❓ Doubt Active (Auto-Extend):'}
+                </strong>{' '}
+                {isStudentSatisfied
+                  ? 'Doubt clear ho chuka hai! Session time par smoothly conclude hoga.'
+                  : 'Jab tak aapka doubt clear nahi hota, GD timer extend hota rahega!'}
+              </span>
+            </div>
+
+            {onToggleSatisfaction && (
+              <div className="flex items-center gap-2">
+                {!isStudentSatisfied ? (
+                  <button
+                    onClick={() => onToggleSatisfaction(true)}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 font-mono text-[11px] font-bold transition-colors"
+                  >
+                    ✓ Samajh Gaya (Doubt Clear)
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onToggleSatisfaction(false)}
+                    className="px-2.5 py-1 rounded-lg bg-amber-950/80 hover:bg-amber-900 border border-amber-500/50 text-amber-300 font-mono text-[11px] font-bold transition-colors"
+                  >
+                    ❓ Ek Aur Doubt Hai
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* TAB 1: REAL-TIME TACTICAL WHISPER */}
           {activeTab === 'whisper' && (
             <div className="space-y-3">
@@ -300,6 +347,10 @@ export function CoPilotHUD({
                   <p className="text-xs text-zinc-300 leading-relaxed">
                     {whisper.advice}
                   </p>
+                  {/* Natural Hinglish Tip */}
+                  <div className="p-2 rounded-lg bg-[#220d1c] border border-[#ffc400]/40 text-[#ffc400] text-xs font-mono">
+                    {whisper.hinglishTip}
+                  </div>
                 </div>
 
                 <div className="shrink-0 w-full md:w-auto">

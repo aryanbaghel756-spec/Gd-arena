@@ -57,6 +57,10 @@ export function useGDSimulator() {
   // Final Report
   const [report, setReport] = useState<GDReport>(MOCK_REPORT_DATA);
 
+  // Student Doubt Resolution State (Discussion continues until student doubt is cleared)
+  const [isStudentSatisfied, setIsStudentSatisfied] = useState<boolean>(false);
+  const isStudentSatisfiedRef = useRef<boolean>(false);
+
   // Backend state references
   const roomIdRef = useRef<string | null>(null);
   const activeTurnIdRef = useRef<string | null>(null);
@@ -66,6 +70,22 @@ export function useGDSimulator() {
   const aiTurnTimerRef = useRef<NodeJS.Timeout | null>(null);
   const recognitionRef = useRef<any>(null);
   const speechBufferRef = useRef<string>('');
+
+  const handleToggleSatisfaction = useCallback((satisfied: boolean) => {
+    setIsStudentSatisfied(satisfied);
+    isStudentSatisfiedRef.current = satisfied;
+    const rId = roomIdRef.current;
+    if (rId) {
+      fetch(`${API_BASE}/api/rooms/${rId}/satisfaction`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          is_satisfied: satisfied,
+          notes: satisfied ? 'Student confirmed doubt resolved' : 'Student has open doubt; extending discussion'
+        })
+      }).catch(() => {});
+    }
+  }, []);
 
   // 1. Initial Load: Fetch Topics from Backend
   useEffect(() => {
@@ -288,6 +308,8 @@ export function useGDSimulator() {
     setPhase('opening');
     setIsPaused(false);
     isInterruptedRef.current = false;
+    setIsStudentSatisfied(false);
+    isStudentSatisfiedRef.current = false;
     setScreen('arena');
 
     try {
@@ -396,6 +418,14 @@ export function useGDSimulator() {
     const recognized = speechBufferRef.current.trim() ||
       'I want to introduce a key structural point: we must balance immediate feasibility with long-term systemic resilience.';
 
+    // Auto-detect doubt resolution or probing in speech
+    const recLower = recognized.toLowerCase();
+    if (/samajh gaya|samajh aa gaya|clear hai|doubt clear|understood|got it|makes sense|satisfied/.test(recLower)) {
+      handleToggleSatisfaction(true);
+    } else if (/doubt hai|kyu|kaise|samajh nhi aaya|why|how|not convinced/.test(recLower)) {
+      handleToggleSatisfaction(false);
+    }
+
     const newSeconds = Math.max(0, discussionMinutes * 60 - remainingSeconds);
     const mins = Math.floor(newSeconds / 60);
     const secs = newSeconds % 60;
@@ -423,11 +453,19 @@ export function useGDSimulator() {
     if (rId) {
       advanceTurn(rId, recognized, intId);
     }
-  }, [advanceTurn, discussionMinutes, remainingSeconds]);
+  }, [advanceTurn, discussionMinutes, handleToggleSatisfaction, remainingSeconds]);
 
   // 8. Submit Typed Speech (Fallback / Direct Input)
   const handleSubmitTypedSpeech = useCallback((text: string) => {
     if (!text.trim()) return;
+
+    // Auto-detect doubt resolution or probing in typed text
+    const textLower = text.toLowerCase();
+    if (/samajh gaya|samajh aa gaya|clear hai|doubt clear|understood|got it|makes sense|satisfied/.test(textLower)) {
+      handleToggleSatisfaction(true);
+    } else if (/doubt hai|kyu|kaise|samajh nhi aaya|why|how|not convinced/.test(textLower)) {
+      handleToggleSatisfaction(false);
+    }
 
     const newSeconds = Math.max(0, discussionMinutes * 60 - remainingSeconds);
     const mins = Math.floor(newSeconds / 60);
@@ -456,7 +494,7 @@ export function useGDSimulator() {
     if (rId) {
       advanceTurn(rId, text.trim(), intId);
     }
-  }, [advanceTurn, discussionMinutes, remainingSeconds]);
+  }, [advanceTurn, discussionMinutes, handleToggleSatisfaction, remainingSeconds]);
 
   // 9. Interruption Handling (Cut AI audio instantly)
   const handleInterrupt = useCallback(() => {
@@ -538,16 +576,22 @@ export function useGDSimulator() {
     }
   }, [discussionMinutes, remainingSeconds, transcripts.length]);
 
-  // 11. Timer Tick
+  // 11. Timer Tick with Student Doubt Continuation
   useEffect(() => {
     if (screen !== 'arena' || isPaused) return;
 
     timerRef.current = setInterval(() => {
       setRemainingSeconds((prev) => {
         if (prev <= 1) {
-          clearInterval(timerRef.current!);
-          handleEndGD();
-          return 0;
+          if (!isStudentSatisfiedRef.current) {
+            // Keep room open until student's doubt is cleared!
+            setCurrentSpeechSnippet('Moderator: "Aapka doubt abhi open hai, discussion continue rahega jab tak concept clear na ho!"');
+            return 45; // Auto-extend discussion by 45 seconds!
+          } else {
+            clearInterval(timerRef.current!);
+            handleEndGD();
+            return 0;
+          }
         }
 
         const totalSecs = discussionMinutes * 60;
@@ -630,5 +674,7 @@ export function useGDSimulator() {
     handleSkipToClosing,
     handleEndGD,
     handleRetryMic,
+    isStudentSatisfied,
+    handleToggleSatisfaction,
   };
 }

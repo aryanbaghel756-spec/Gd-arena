@@ -46,6 +46,8 @@ export default function Home() {
     handleSkipToClosing,
     handleEndGD,
     handleRetryMic,
+    isStudentSatisfied,
+    handleToggleSatisfaction,
   } = useGDSimulator();
 
   // Scroll smoothly to "how it works"
@@ -140,6 +142,8 @@ export default function Home() {
                 participants={participants}
                 transcripts={transcripts}
                 topicFacts={topicFacts}
+                isStudentSatisfied={isStudentSatisfied}
+                onToggleSatisfaction={handleToggleSatisfaction}
                 activeSpeakerId={activeSpeakerId}
                 phase={phase}
                 remainingSeconds={remainingSeconds}

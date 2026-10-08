@@ -12,12 +12,20 @@ from .facts_db import get_facts_for_topic
 SATISFACTION_KEYWORDS = [
     "makes sense", "understood", "got it", "i see", "satisfied", "clear now",
     "good point", "agree with that data", "cleared my doubt", "that answers my question",
-    "convinced", "well explained"
+    "convinced", "well explained",
+    # Hinglish natural phrases
+    "samajh gaya", "samajh gayi", "samajh aa gaya", "clear hai", "doubt clear",
+    "theek hai bhai", "ab clear hai", "sahi bola", "agree karta hu", "point sahi hai",
+    "shukriya", "thank you", "ab samajh aaya", "bilkul sahi"
 ]
 
 PROBING_KEYWORDS = [
     "why", "how", "what about", "not convinced", "still doubtful", "proof",
-    "evidence", "but what if", "disagree", "unrealistic", "clarify", "doesn't answer"
+    "evidence", "but what if", "disagree", "unrealistic", "clarify", "doesn't answer",
+    # Hinglish probing phrases
+    "kaise", "kyu", "kyun", "par kyu", "aisa kyu", "doubt hai", "samajh nhi aaya",
+    "samajh nahi aaya", "bhai kaise", "proof kya hai", "yakin nhi ho raha",
+    "batao na", "clear nahi hua", "ek doubt hai", "sawal hai"
 ]
 
 def analyze_student_intent(student_text: str) -> Dict[str, Any]:

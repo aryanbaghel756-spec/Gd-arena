@@ -14,6 +14,8 @@ interface LiveArenaProps {
   participants: Participant[];
   transcripts: TranscriptItem[];
   topicFacts?: TopicFacts | null;
+  isStudentSatisfied?: boolean;
+  onToggleSatisfaction?: (satisfied: boolean) => void;
   activeSpeakerId: string | null;
   phase: DiscussionPhase;
   remainingSeconds: number;
@@ -40,6 +42,8 @@ export function LiveArena({
   participants,
   transcripts,
   topicFacts,
+  isStudentSatisfied,
+  onToggleSatisfaction,
   activeSpeakerId,
   phase,
   remainingSeconds,
@@ -206,6 +210,8 @@ export function LiveArena({
                 participants={participants}
                 transcripts={transcripts}
                 topicFacts={topicFacts}
+                isStudentSatisfied={isStudentSatisfied}
+                onToggleSatisfaction={onToggleSatisfaction}
                 onAdoptPrompt={(promptText) => setAdoptedPrompt(promptText)}
               />
             </div>
