@@ -33,34 +33,35 @@ async def advance_room_turn(
         room.phase = "opening"
         if room.format == "case_based":
             text = (
-                f"Welcome to this Case-Study GD on '{room.topic}'. "
-                "Analyze the stakeholder trade-offs between runway survival and employee morale. Who will begin?"
+                f"Hey everyone, welcome! Please relax, this is a friendly practice space to explore ideas together without any pressure. "
+                f"Today we're tackling a Case-Study GD: '{room.topic}'. Take a breath and feel free to start whenever you're ready. Who would like to open?"
                 if not is_hinglish else
-                f"Welcome everyone! Aaj hum case study discuss kar rahe hain: '{room.topic}'. "
-                "Kon start karega with problem analysis?"
+                f"Hey everyone, welcome! Bilkul relax hokar discuss kijiye, ye ek friendly practice room hai jahan hum sab milkar seekhenge. "
+                f"Aaj ka case study hai: '{room.topic}'. Kaun shuru karna chahega, ya aap shuru karna chahenge?"
             )
         elif room.format == "abstract":
             text = (
-                f"Welcome everyone to this Abstract GD on '{room.topic}'. "
-                "Look beyond literal meanings and present multidimensional interpretations. The floor is open."
+                f"Hello everyone, welcome! There are no wrong answers here, just fresh creative perspectives. "
+                f"Our abstract topic today is '{room.topic}'. Take your time to reflect—who would like to share their initial thoughts?"
                 if not is_hinglish else
-                f"Welcome everyone! Aaj ka abstract topic hai: '{room.topic}'. "
-                "Isko different perspectives se interpret karke initiate kijiye."
+                f"Hello everyone, welcome! Yahan koi right ya wrong answer nahi hai, bas apne unique perspectives openly share kijiye. "
+                f"Aaj ka abstract topic hai: '{room.topic}'. Kaun initiate karna chahega?"
             )
         elif room.format == "fishbowl":
             text = (
-                f"Welcome to the Fishbowl GD on '{room.topic}'. "
-                "Inner circle participants will initiate the debate. Observer may enter the circle when ready."
+                f"Welcome everyone! Relax and enjoy the session. We're running a fishbowl on '{room.topic}'. "
+                "Inner circle will open the chat, and you can step in whenever you feel ready!"
                 if not is_hinglish else
-                f"Welcome to the Fishbowl GD on '{room.topic}'. "
-                "Inner circle se start karenge, jab aap ready ho circle enter karke speak kar sakte hain."
+                f"Welcome everyone! Relax karke participate kijiye. Aaj fishbowl round hai on '{room.topic}'. "
+                "Jab bhi aap comfortable feel karein, circle me enter karke bol sakte hain!"
             )
         else:
             text = (
-                f"Welcome everyone to today's group discussion on '{room.topic}'. "
-                "Please substantiate your perspectives with empirical logic and real-world examples. Who would like to initiate?"
+                f"Hey everyone, welcome to the discussion room! Don't stress at all, this is a safe, friendly space to practice and learn together. "
+                f"Today's topic is '{room.topic}'. Feel free to share your thoughts whenever you're ready—who would like to begin?"
                 if not is_hinglish else
-                f"Welcome everyone to today's discussion on '{room.topic}'. Data aur logic ke basis par discuss karte hain. Kon start karega?"
+                f"Hey everyone, welcome to GD Arena! Stress lene ki bilkul zaroorat nahi hai, ye ek friendly practice room hai jahan hum sab milkar seekhenge. "
+                f"Aaj ka topic hai: '{room.topic}'. Kaun start karna chahega, ya aap shuru karna chahenge?"
             )
 
         mod_turn = room.add_turn(

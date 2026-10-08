@@ -404,3 +404,31 @@ def test_stock_market_and_nifty_contextual_response():
     assert "farm labor" not in t["text"].lower()
     assert "robot" not in t["text"].lower()
 
+def test_kabir_multi_turn_non_repetitive():
+    """Verify that calling Kabir across multiple turns produces distinct, progressive insights rather than repeating the same response."""
+    create_res = client.post("/api/rooms", json={
+        "topic": "Stock Market & Nifty 50: Long-Term Wealth Creation or Pure Speculation?",
+        "panel_size": 4,
+        "language": "en"
+    })
+    room_id = create_res.json()["room_id"]
+    client.post(f"/api/rooms/{room_id}/next", json={})  # Opening turn
+
+    # Turn 1 to Kabir
+    r1 = client.post(f"/api/rooms/{room_id}/next", json={
+        "student_text": "Kabir, what is the ground reality of short term trading?"
+    }).json()
+    t1_text = r1["turn"]["text"]
+    assert r1["turn"]["speaker_id"] == "kabir"
+
+    # Turn 2 to Kabir
+    r2 = client.post(f"/api/rooms/{room_id}/next", json={
+        "student_text": "Kabir, what should a college student do instead?"
+    }).json()
+    t2_text = r2["turn"]["text"]
+    assert r2["turn"]["speaker_id"] == "kabir"
+
+    # Confirm Kabir gave a fresh, different progressive insight
+    assert t1_text != t2_text, f"Kabir repeated the same answer: {t1_text}"
+
+

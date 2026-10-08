@@ -104,130 +104,334 @@ def generate_contextual_ai_response(
     is_addressed: bool
 ) -> str:
     combined_context = f"{room.topic} {student_text or ''}".lower()
+    # Calculate how many times this persona has spoken so far to provide fresh, non-repetitive turns
+    persona_turn_idx = sum(1 for t in room.transcript if t.speaker_id == pid)
+
+    # Friendly, supportive addressed prefixes (Jarvis / Claude / ChatGPT style)
+    addressed_prefixes_en = {
+        "kabir": "Really glad you asked that! To give you the honest ground reality: ",
+        "aarav": "Great point you brought up! Looking directly at the verified numbers: ",
+        "meera": "I really love that angle! Looking at the positive human side: ",
+        "ananya": "That connects both sides really well! Here is the balanced middle ground: ",
+        "rohan": "Spot-on question! The decisive action to take here is: "
+    }
+    addressed_prefixes_hi = {
+        "kabir": "Bhai bohot valid sawal poocha aapne! Practical angle se dekhein toh: ",
+        "aarav": "Aapne bohot solid point uthaya! Data ke hisaab se dekhein toh: ",
+        "meera": "Aapka point bohot inspiring laga! Iska positive angle dekhein toh: ",
+        "ananya": "Aapne bohot accha point highlight kiya! Iska best middle ground ye hai: ",
+        "rohan": "Ekdum sahi sawaal! Action point ye hai ki: "
+    }
 
     # 1. Stock Market, Nifty 50, Finance, Investments
     if any(w in combined_context for w in ["stock", "market", "nifty", "sensex", "trading", "invest", "share", "equity", "finance", "mutual fund", "money"]):
-        responses = {
-            "aarav": (
-                "Looking at Nifty 50 data, it has historically grown around 12% to 13% CAGR over long periods, driven by real corporate earnings rather than quick speculation."
-                if not is_hinglish else
-                "Nifty 50 ke historical data ko dekhein toh long term me 12% se 13% CAGR return mila hai, jo companies ki real profit growth par based hai."
-            ),
-            "kabir": (
-                "We must be realistic about the risks: SEBI reports that over 90% of retail traders lose capital in short-term F&O trading due to lack of risk management."
-                if not is_hinglish else
-                "Hume ground reality dekhni chahiye: SEBI ki study ke mutabik 90% se zyada retail traders F&O trading me apna capital kho dete hain."
-            ),
-            "meera": (
-                "Rather than stressful day trading, index funds and systematic SIPs give young investors a simple way to participate in overall economic growth."
-                if not is_hinglish else
-                "Intraday trading ke stress ki jagah, regular index funds aur SIPs ke zariye beginners safe tarike se long-term wealth create kar sakte hain."
-            ),
-            "ananya": (
-                "Aarav shows the compounding potential and Kabir highlights trading pitfalls. The balanced path is broad index investing paired with a safe emergency fund."
-                if not is_hinglish else
-                "Aarav ka growth point aur Kabir ka risk warning dono valid hain. Smart approach ye hai ki emergency fund ke sath disciplined index investing ki jaye."
-            ),
-            "rohan": (
-                "Inflation erodes idle cash every year. Disciplined investing in top index companies like Nifty 50 is essential to protect purchasing power."
-                if not is_hinglish else
-                "Idle cash par inflation ka loss hota hai. Nifty ke top companies me disciplined investing hi financial security ka reliable tarika hai."
-            )
+        pools = {
+            "kabir": [
+                ("SEBI's official study revealed that 93% of retail traders lose capital in short-term F&O trading due to poor risk management. Without discipline, day-trading becomes pure gambling."
+                 if not is_hinglish else
+                 "Hume ground reality dekhni chahiye: SEBI ki study ke mutabik 93% se zyada retail traders F&O trading me apna capital kho dete hain. Bina risk management ke trading gambling ban jati hai."),
+                ("That's why separating long-term compounding from quick intraday hype is crucial. Even legendary investors prove that time in the market beats timing the market every single time."
+                 if not is_hinglish else
+                 "Asli wealth quick intraday trading se nahi, balki 5 se 10 saal ke patience aur index compounding se banti hai. Har mahine SIP karna speculative trading se 100 times safer hai."),
+                ("For college students like us, the smartest move is building a 3-month emergency fund first and starting a small 500-rupee index SIP, instead of falling for fake Telegram tip channels."
+                 if not is_hinglish else
+                 "College students ke liye practical advice ye hai: fake Telegram tips ke peeche mat bhago. Index mutual fund me chhota monthly SIP shuru karo aur focus apni coding aur career skills par rakho."),
+                ("You made a very mature observation there! If you balance equity allocation with a safety cash buffer, market dips won't trigger panic, and you can build sustainable long-term wealth."
+                 if not is_hinglish else
+                 "Bhai tumhara observation bohot solid hai! Agar equity ke sath thoda safety reserve rakhein, toh market crash me bhi darr nahi lagta aur long-term wealth safely grow hoti hai.")
+            ],
+            "aarav": [
+                ("Looking at Nifty 50 historical data, it has compounded at around 12% to 13% CAGR over the last 20 years, driven by the real earnings growth of India's top 50 corporate leaders."
+                 if not is_hinglish else
+                 "Nifty 50 ke 20 saal ke historical data ko dekhein toh long term me 12% se 13% CAGR return mila hai, jo companies ki real profit growth par based hai."),
+                ("Think about the math of compounding: a disciplined 1,000 rupee monthly SIP in Nifty 50 at 12% CAGR grows to over 10 lakh rupees in 20 years, simple and predictable."
+                 if not is_hinglish else
+                 "Compounding ka simple math dekhein: har mahine 1,000 rupaye ki index SIP 12% return par 20 saal me 10 lakh se zyada ban jati hai, bina kisi daily stress ke."),
+                ("India's corporate tax receipts and GDP are expanding toward 7 trillion dollars by 2030, directly driving the top index companies in banking, IT, and manufacturing."
+                 if not is_hinglish else
+                 "India ki GDP 2030 tak 7 trillion dollars reach karne wali hai, jiska direct benefit Nifty 50 ke top banking, IT aur manufacturing leaders ko milega."),
+                ("Historical rolling data confirms that anyone holding Nifty 50 index funds for over 7 years has virtually zero historical probability of a negative return."
+                 if not is_hinglish else
+                 "Historical data ye proof karta hai ki agar koi 7 saal se zyada Nifty index me invest rehta hai, toh negative return aane ka risk almost zero ho jata hai.")
+            ],
+            "meera": [
+                ("Rather than stressful day trading, index funds and systematic SIPs give young beginners a peaceful, stress-free way to participate in overall economic growth."
+                 if not is_hinglish else
+                 "Intraday trading ke daily stress ki jagah, regular index funds aur SIPs ke zariye beginners bilkul safe aur peaceful tarike se wealth create kar sakte hain."),
+                ("Financial literacy is such an empowering life skill! When automation handles our savings through SIPs, we can focus our creative energy on coding, design, and our passions."
+                 if not is_hinglish else
+                 "Financial literacy bohot empowering skill hai! Jab SIP automatic chalti hai, toh hum apna pura focus apne projects aur creative skills par laga sakte hain."),
+                ("As young people invest systematically in transparent index companies, our domestic businesses get stronger and innovate faster with Indian capital."
+                 if not is_hinglish else
+                 "Jab young generation disciplined tarike se invest karti hai, toh hamare desh ke innovative businesses ko grow karne ke liye strong domestic support milta hai."),
+                ("Starting early gives us financial freedom and confidence to take bold, creative career choices later in life without fear."
+                 if not is_hinglish else
+                 "Early age me thoda-thoda invest karne se life me financial peace aur confidence milta hai, taaki hum apne dreams bina darr ke pursue kar sakein.")
+            ],
+            "ananya": [
+                ("Aarav shows the compounding potential and Kabir highlights trading pitfalls. The balanced path is broad index investing paired with a safe emergency fund."
+                 if not is_hinglish else
+                 "Aarav ka growth point aur Kabir ka risk warning dono valid hain. Smart approach ye hai ki emergency fund ke sath disciplined index investing ki jaye."),
+                ("A smart rule of thumb is allocating 80% to safe, broad-market index funds and keeping 20% liquid, completely steering clear of high-risk derivatives."
+                 if not is_hinglish else
+                 "Best middle ground rule ye hai: 80% safe index funds me aur 20% emergency savings me rakhein, aur risky leverage trading se door rahein."),
+                ("Both long-term optimism and short-term caution are essential: know your financial horizon before investing, and never invest money you need in the next 12 months."
+                 if not is_hinglish else
+                 "Dono sides essential hain: apna time horizon clear rakhein, aur jo paisa agle ek saal me chahiye, usko equity market me invest mat karein."),
+                ("This is a wonderful synthesis: financial education in college should teach risk awareness and emotional discipline alongside the power of compounding."
+                 if not is_hinglish else
+                 "Ye bohot accha consensus hai: colleges me financial literacy sikhani chahiye, jisme compounding ke sath emotional discipline aur risk control bhi sikhaya jaye.")
+            ],
+            "rohan": [
+                ("Inflation at 6% erodes idle bank cash every year. Disciplined investing in top index companies like Nifty 50 is essential to protect purchasing power."
+                 if not is_hinglish else
+                 "Idle cash par inflation ka loss hota hai. Nifty ke top companies me disciplined investing hi financial security ka reliable tarika hai."),
+                ("Starting early at age 20 gives you a massive 10-year compounding head-start compared to someone starting at 30. Proactive action is our biggest advantage."
+                 if not is_hinglish else
+                 "20 saal ki age me shuru karne se 10 saal ka massive compounding advantage milta hai. Delay karne ki jagah jaldi shuru karna hi sabse bada game-changer hai."),
+                ("Execution is everything: instead of waiting for the 'perfect day' to invest, start an automated SIP today and stay consistent month after month."
+                 if not is_hinglish else
+                 "Analysis paralysis me fasne ki jagah execution par focus karein: ek automated SIP set karein aur consistency maintain karein."),
+                ("Disciplined, consistent action beats pure theory. Build the habit of saving and investing early, and financial independence becomes inevitable."
+                 if not is_hinglish else
+                 "Real world me consistent action hi jeet ta hai. Early age me disciplined habit bana li toh future me financial stress kabhi nahi hoga.")
+            ]
         }
     # 2. College Attendance, 75% Rule, Academics
     elif any(w in combined_context for w in ["attendance", "college", "75%", "75 percent", "class", "professor", "mandatory", "student", "degree"]):
-        responses = {
-            "aarav": (
-                "Data shows that while 75% attendance builds classroom routine, top students often need dedicated flexible hours for coding, internships, and placement prep."
-                if not is_hinglish else
-                "Data dekhein toh 75% attendance discipline toh lati hai, par students ko coding aur placement prep ke liye flexible self-study hours chahiye hote hain."
-            ),
-            "kabir": (
-                "Mandatory physical presence does not mean genuine learning. If lectures are outdated, forcing students to sit in class only creates frustration."
-                if not is_hinglish else
-                "Sirf biometric attendance lagane se learning nahi hoti. Agar lectures practical nahi hain, toh 75% mandate sirf time waste ban jata hai."
-            ),
-            "meera": (
-                "Colleges should offer credit for verified projects, hackathons, and research rather than counting only physical desk hours."
-                if not is_hinglish else
-                "Attendance ko flexible karke hackathons, real projects aur internships ko academic credits ke form me recognize karna chahiye."
-            ),
-            "ananya": (
-                "A practical compromise is lowering baseline attendance to 60%, with automatic exemptions for verified internships and technical projects."
-                if not is_hinglish else
-                "Best middle ground ye hai ki 60% minimum attendance rakhein aur verified technical projects aur internships ko attendance credit dein."
-            ),
-            "rohan": (
-                "Recruiters evaluate GitHub repositories, live projects, and problem solving, not attendance percentages. Practical skills must take priority."
-                if not is_hinglish else
-                "Companies placement me skills aur practical projects dekhti hain, attendance sheets nahi. Colleges ko skill development par focus karna hoga."
-            )
+        pools = {
+            "kabir": [
+                ("Mandatory physical presence does not mean genuine learning. If lectures are outdated, forcing students to sit in class only creates frustration."
+                 if not is_hinglish else
+                 "Sirf biometric attendance lagane se learning nahi hoti. Agar lectures practical nahi hain, toh 75% mandate sirf time waste ban jata hai."),
+                ("Ground reality dekho: students sit in the back row doing proxy attendance or scrolling social media. That defeats the whole purpose of education."
+                 if not is_hinglish else
+                 "Ground reality ye hai ki students back row me baith kar reels scroll karte hain attendance ke liye. Isse koi genuine skill nahi banti."),
+                ("Colleges need to recognize that top tech companies look for GitHub repos and solved problems, not whether you had 75% or 90% attendance."
+                 if not is_hinglish else
+                 "Companies placement me GitHub projects aur problem-solving skills dekhti hain, attendance sheets nahi. Practical talent recognize hona chahiye."),
+                ("If a student is genuinely building a startup or contributing to open source, forcing 75% biometric attendance holds them back from succeeding."
+                 if not is_hinglish else
+                 "Agar student startup build kar raha hai ya open-source coding kar raha hai, toh strict attendance unki growth rok deti hai.")
+            ],
+            "aarav": [
+                ("AICTE data shows that 68% of engineering students learn high-leverage industry skills through self-directed online projects rather than standard lecture hours."
+                 if not is_hinglish else
+                 "AICTE data dekhein toh 68% students industry-ready skills online projects aur self-study se seekhte hain, rote lectures se nahi."),
+                ("Colleges with flexible 60% attendance requirements report higher placement packages because students get dedicated time for DSA and interview prep."
+                 if not is_hinglish else
+                 "Data batata hai ki flexible attendance wale colleges me placement rate high hota hai kyunki students ko interview prep ka time milta hai."),
+                ("Global universities allow students to replace classroom hours with verified corporate internships and laboratory research credits."
+                 if not is_hinglish else
+                 "Top world universities me students lecture hours ko real internships aur research papers se replace kar sakte hain."),
+                ("The data proves that a hybrid model combining core lectures with project credits produces the best employability outcomes."
+                 if not is_hinglish else
+                 "Hybrid academic model jahan projects ko attendance credit mile, wahi sabse best placement results deta hai.")
+            ],
+            "meera": [
+                ("Colleges should offer credit for verified projects, hackathons, and research rather than counting only physical desk hours."
+                 if not is_hinglish else
+                 "Attendance ko flexible karke hackathons, real projects aur internships ko academic credits ke form me recognize karna chahiye."),
+                ("Education should spark curiosity, not feel like a prison sentence. Flexible schedules allow students to innovate and build real things."
+                 if not is_hinglish else
+                 "Education me curiosity aur excitement honi chahiye. Flexible schedule se students apne creative ideas par freely kaam kar pate hain."),
+                ("When students have time to collaborate on creative multidisciplinary projects, campus culture becomes vibrant and productive."
+                 if not is_hinglish else
+                 "Jab students ko collaborative projects ka time milta hai, toh campus ka environment bohot innovative aur energetic ban jata hai."),
+                ("Let us celebrate practical learning by turning attendance into active participation and creative problem solving!"
+                 if not is_hinglish else
+                 "Hume learning ko celebrate karna chahiye desk par ghante count karne ki jagah real problem-solving ko value dekar!")
+            ],
+            "ananya": [
+                ("A practical compromise is lowering baseline attendance to 60%, with automatic exemptions for verified internships and technical projects."
+                 if not is_hinglish else
+                 "Best middle ground ye hai ki 60% minimum attendance rakhein aur verified technical projects aur internships ko attendance credit dein."),
+                ("We can balance foundational discipline with student autonomy by recognizing hackathon wins and internships as valid academic attendance."
+                 if not is_hinglish else
+                 "Dono ko balance karein: basic discipline ke sath verified achievements aur competitions ko attendance waiver milna chahiye."),
+                ("Both sides have merit: basic discipline is good for freshmen, but senior students must have flexibility to prepare for placements."
+                 if not is_hinglish else
+                 "First year me discipline theek hai, par 3rd aur 4th year ke students ko placement prep ke liye freedom milni hi chahiye."),
+                ("A phased attendance model solves both concerns smoothly without compromising campus academic standards."
+                 if not is_hinglish else
+                 "Year-wise flexible attendance system implement karna sabse practical aur balanced solution hai.")
+            ],
+            "rohan": [
+                ("Recruiters evaluate GitHub repositories, live projects, and problem solving, not attendance percentages. Practical skills must take priority."
+                 if not is_hinglish else
+                 "Companies placement me skills aur practical projects dekhti hain, attendance sheets nahi. Colleges ko skill development par focus karna hoga."),
+                ("Speed of skill acquisition is everything. If 75% attendance prevents a student from doing a high-value internship, it directly damages their career."
+                 if not is_hinglish else
+                 "Agar strict attendance ki wajah se student achhi internship na kar paye, toh ye unke future career ke sath unfair hai."),
+                ("Colleges that want high placement percentages must immediately modernize their rules and reward practical execution."
+                 if not is_hinglish else
+                 "Top engineering colleges wahi hain jo rules flexible karke students ki real-world execution ko boost karte hain."),
+                ("The solution is clear: take decisive action to link attendance credits directly to verified coding challenges and internships."
+                 if not is_hinglish else
+                 "Decisive action lena zaroori hai: coding platforms aur hackathon results ko sidha academic credit se link karo.")
+            ]
         }
     # 3. AI, Jobs, Automation
     elif any(w in combined_context for w in ["ai", "job", "automation", "tech", "work", "unemployment", "code", "software"]):
-        responses = {
-            "aarav": (
-                "Looking at the data from the World Economic Forum, 85 million routine jobs will change, but 97 million new roles will be created in tech and green energy."
-                if not is_hinglish else
-                "WEF ke data ke mutabik 85 million jobs automate hongi par 97 million nayi roles create hongi, so net growth positive hai."
-            ),
-            "kabir": (
-                "That sounds positive, but OECD studies show that 27% of jobs face high risk. Non-technical workers cannot easily switch without years of retraining."
-                if not is_hinglish else
-                "Long term toh theek hai, par OECD report kehti hai 27% jobs high risk par hain. Short term me un displaced workers ka kya hoga?"
-            ),
-            "meera": (
-                "Let us think of AI as a helpful assistant rather than a replacement. It takes away repetitive work so we can focus on creative thinking."
-                if not is_hinglish else
-                "AI ko replacement ki jagah co-pilot samjho. Stanford study kehti hai log routine kaam ki jagah strategy me 40% zyada time spend kar rahe hain."
-            ),
-            "ananya": (
-                "Kabir makes a fair point about transition hurdles, but free reskilling grants paired with apprenticeships can bridge that gap."
-                if not is_hinglish else
-                "Kabir ka point valid hai transition friction par, par agar government reskilling grants de aur companies apprenticeship de, toh ye gap bridge ho sakta hai."
-            ),
-            "rohan": (
-                "In the global economy, nations and companies that hesitate to adopt AI will quickly fall behind international competitors."
-                if not is_hinglish else
-                "Geopolitical reality simple hai: jo desh AI adopt karne me delay karega, woh global market me peeche chhoot jayega."
-            )
+        pools = {
+            "kabir": [
+                ("That sounds positive, but OECD studies show that 27% of jobs face high risk. Non-technical workers cannot easily switch without years of retraining."
+                 if not is_hinglish else
+                 "Long term toh theek hai, par OECD report kehti hai 27% jobs high risk par hain. Short term me un displaced workers ka kya hoga?"),
+                ("We must be realistic: a displaced administrative or factory worker cannot become an AI engineer in just six months without income support."
+                 if not is_hinglish else
+                 "Hume ye nahi bhulna chahiye ki ground level par ek displaced worker 6 mahine me AI engineer nahi ban sakta bina financial support ke."),
+                ("If big tech companies take all the profits, how will local communities support workers who lose their regular livelihoods?"
+                 if not is_hinglish else
+                 "Agar saara profit top tech giants me consolidate hoga, toh local workers ko support karne ke liye safety net kahan se aayega?"),
+                ("The real hurdle is not whether jobs will exist in 2040, but how we support families during the next 5 to 7 transition years."
+                 if not is_hinglish else
+                 "Asli challenge 10 saal baad ka nahi hai, balki agle 5 saal ke transition period me ordinary workers ko protect karne ka hai.")
+            ],
+            "aarav": [
+                ("Looking at the data from the World Economic Forum, 85 million routine jobs will change, but 97 million new roles will be created in tech and green energy."
+                 if not is_hinglish else
+                 "WEF ke data ke mutabik 85 million jobs automate hongi par 97 million nayi roles create hongi, so net growth positive hai."),
+                ("Historical economic data from the Industrial Revolution shows farm labor dropped from 70% to under 3%, yet real wages grew 400% as new industries emerged."
+                 if not is_hinglish else
+                 "Historical data dekhein toh farm labor 70% se ghat kar 3% hua tha, par wages 400% badhi nayi industries aur services ki wajah se."),
+                ("Goldman Sachs estimates generative AI will drive a 7% increase in global GDP over a decade, creating massive local service demand."
+                 if not is_hinglish else
+                 "Goldman Sachs estimate karta hai ki AI se global GDP 7% badhegi, jo local services me nayi jobs generate karegi."),
+                ("Empirical studies show engineers using AI tools complete tasks 40% faster with higher code quality, amplifying productivity rather than replacing talent."
+                 if not is_hinglish else
+                 "Studies confirm karti hain ki AI tools use karne wale developers 40% faster deliver karte hain, jisse unki value badhti hai.")
+            ],
+            "meera": [
+                ("Let us think of AI as a helpful assistant rather than a replacement. It takes away repetitive work so we can focus on creative thinking."
+                 if not is_hinglish else
+                 "AI ko replacement ki jagah co-pilot samjho. Stanford study kehti hai log routine kaam ki jagah strategy me 40% zyada time spend kar rahe hain."),
+                ("Think about brand-new careers like AI prompt engineering, digital ethics auditing, and robotic maintenance that didn't exist three years ago."
+                 if not is_hinglish else
+                 "Socho prompt designers aur digital ethics reviewers jaise exciting naye careers jo 3 saal pehle exist bhi nahi karte the."),
+                ("When routine data work is automated, people can spend more time on healthcare, teaching, storytelling, and empathetic human roles."
+                 if not is_hinglish else
+                 "Jab repetitive data work automate hota hai, human potential healthcare, teaching aur creative leadership me invest hota hai."),
+                ("AI democratizes tools: a solo college student can now build a complete SaaS product with AI that previously required a 20-person company!"
+                 if not is_hinglish else
+                 "AI se ek akela college student poora startup build kar sakta hai jo pehle 20 logon ki team ke bina possible nahi tha!")
+            ],
+            "ananya": [
+                ("Kabir makes a fair point about transition hurdles, but free reskilling grants paired with apprenticeships can bridge that gap."
+                 if not is_hinglish else
+                 "Kabir ka point valid hai transition friction par, par agar government reskilling grants de aur companies apprenticeship de, toh ye gap bridge ho sakta hai."),
+                ("Looking at both sides, the best solution is giving workers transition security like the Nordic labor model while upskilling them in modern digital tools."
+                 if not is_hinglish else
+                 "Dono sides ko dekh kar, Nordic model jaise active labor policies aur transition security hi best practical solution hai."),
+                ("Aarav shows the long-term growth and Kabir shows the immediate pain. The real answer is managing the transition speed with public-private partnerships."
+                 if not is_hinglish else
+                 "Aarav ka growth data aur Kabir ka immediate pain dono combine karein toh transition speed manage karna hi core policy solution hai."),
+                ("When education systems update curricula to teach human creativity alongside AI literacy, students become indispensable."
+                 if not is_hinglish else
+                 "Jab colleges human creativity aur AI tools dono sikhayenge, toh graduates replace hone ki jagah highly in-demand banenge.")
+            ],
+            "rohan": [
+                ("In the global economy, nations and companies that hesitate to adopt AI will quickly fall behind international competitors."
+                 if not is_hinglish else
+                 "Geopolitical reality simple hai: jo desh AI adopt karne me delay karega, woh global market me peeche chhoot jayega."),
+                ("Instead of fearing job cuts, colleges must update their syllabus immediately to equip students with practical AI workflows."
+                 if not is_hinglish else
+                 "Hume execution speed badhani hogi. Proactive curriculum update hi hamara sabse strong career defense hai."),
+                ("We cannot afford to delay progress out of fear. Fast execution and practical training are our greatest advantages."
+                 if not is_hinglish else
+                 "Fear of disruption ki wajah se leadership lose nahi kar sakte. Scale par skilling karna hi national priority hona chahiye."),
+                ("Those who master AI tools will lead the next generation of industry. Bold, proactive action is the winning strategy."
+                 if not is_hinglish else
+                 "Jo log AI tools ko master karenge wahi next generation lead karenge. Bold aur proactive action hi success ka formula hai.")
+            ]
         }
     # 4. General / Custom Debate Topic
     else:
         topic_snip = room.topic[:40]
-        responses = {
-            "aarav": (
-                f"When looking at '{topic_snip}', we must evaluate the verified data and measurable trade-offs rather than assumptions."
-                if not is_hinglish else
-                f"'{topic_snip}' par hume real data aur ground metrics ko dekh kar analyze karna chahiye."
-            ),
-            "kabir": (
-                f"On '{topic_snip}', we cannot ignore the real execution bottlenecks and downside risks before celebrating ideal outcomes."
-                if not is_hinglish else
-                f"'{topic_snip}' me theoretical benefits toh hain, par ground level execution risks ko analyze karna zaroori hai."
-            ),
-            "meera": (
-                f"With '{topic_snip}', there is an opportunity to innovate and create human-centric solutions that benefit everyone."
-                if not is_hinglish else
-                f"'{topic_snip}' ko ek positive opportunity ki tarah dekhein toh hum creative solutions develop kar sakte hain."
-            ),
-            "ananya": (
-                f"Looking at '{topic_snip}', the solution lies in finding common ground between practical feasibility and long-term benefit."
-                if not is_hinglish else
-                f"'{topic_snip}' me opposing viewpoints ko merge karke ek realistic consensus banana hi best way forward hai."
-            ),
-            "rohan": (
-                f"Decisive action on '{topic_snip}' is what matters most; fast execution and proactive steps will determine the outcome."
-                if not is_hinglish else
-                f"'{topic_snip}' me delay karne se issues badhenge, decisive action aur fast execution hi key hai."
-            )
+        pools = {
+            "kabir": [
+                (f"On '{topic_snip}', we cannot ignore the real execution bottlenecks and downside risks before celebrating ideal outcomes."
+                 if not is_hinglish else
+                 f"'{topic_snip}' me theoretical benefits toh hain, par ground level execution risks ko analyze karna zaroori hai."),
+                (f"Looking closely at '{topic_snip}', who bears the real cost when things don't go according to plan? Practical safeguards are essential."
+                 if not is_hinglish else
+                 f"'{topic_snip}' me jab challenges aate hain toh ground level par kaun suffer karta hai? Safeguards banana sabse pehla step hona chahiye."),
+                (f"Before scaling any strategy on '{topic_snip}', let's test small pilot experiments to verify ground reality rather than blind assumptions."
+                 if not is_hinglish else
+                 f"'{topic_snip}' me blind assumptions ki jagah chhote pilot projects se reality test karna bohot smart approach hogi."),
+                (f"That's a very thoughtful view! Acknowledging real constraints on '{topic_snip}' is the only way to build durable solutions."
+                 if not is_hinglish else
+                 f"Aapne bohot accha point uthaya! Real constraints ko samajh kar hi hum '{topic_snip}' par successful ho sakte hain.")
+            ],
+            "aarav": [
+                (f"When looking at '{topic_snip}', we must evaluate the verified data and measurable trade-offs rather than assumptions."
+                 if not is_hinglish else
+                 f"'{topic_snip}' par hume real data aur ground metrics ko dekh kar analyze karna chahiye."),
+                (f"Measurable metrics on '{topic_snip}' show that structured incentives deliver 3x better outcomes than punitive enforcement."
+                 if not is_hinglish else
+                 f"Numbers batate hain ki '{topic_snip}' me positive incentives strict penalties se 3 guna zyada effective hote hain."),
+                (f"Analyzing historical precedents similar to '{topic_snip}', systemic changes always take measurable phases to show full return on investment."
+                 if not is_hinglish else
+                 f"Historical data dekhein toh '{topic_snip}' jaise transitions phased implementation ke sath best results dete hain."),
+                (f"The numbers support your perspective on '{topic_snip}', proving that balanced allocation yields optimal long-term results."
+                 if not is_hinglish else
+                 f"Data aapke point ko support karta hai, proving ki '{topic_snip}' me balanced approach hi best metrics deti hai.")
+            ],
+            "meera": [
+                (f"With '{topic_snip}', there is an opportunity to innovate and create human-centric solutions that benefit everyone."
+                 if not is_hinglish else
+                 f"'{topic_snip}' ko ek positive opportunity ki tarah dekhein toh hum creative solutions develop kar sakte hain."),
+                (f"Focusing on empathy and collaboration turns '{topic_snip}' from a rigid argument into an inspiring shared journey."
+                 if not is_hinglish else
+                 f"Empathy aur cooperation se hum '{topic_snip}' me har stakeholder ke liye win-win scenario create kar sakte hain."),
+                (f"Creative thinking allows us to find fresh, untapped solutions for '{topic_snip}' that traditional systems completely overlooked."
+                 if not is_hinglish else
+                 f"Creative thinking se hum '{topic_snip}' me naye avenues discover kar sakte hain jo pehle kisi ne nahi soche the."),
+                (f"I really love that point! When we center people in '{topic_snip}', everyone feels motivated to contribute their best."
+                 if not is_hinglish else
+                 f"Aapka viewpoint bohot encouraging hai! Jab hum '{topic_snip}' me logon ki khushi ko priority dete hain toh best outcomes aate hain.")
+            ],
+            "ananya": [
+                (f"Looking at '{topic_snip}', the solution lies in finding common ground between practical feasibility and long-term benefit."
+                 if not is_hinglish else
+                 f"'{topic_snip}' me opposing viewpoints ko merge karke ek realistic consensus banana hi best way forward hai."),
+                (f"Balancing immediate needs against long-term goals is the key to mastering '{topic_snip}' without leaving anyone behind."
+                 if not is_hinglish else
+                 f"Short-term feasibility aur long-term vision ko merge karna hi '{topic_snip}' ka sabse healthy solution hai."),
+                (f"Both perspectives on '{topic_snip}' hold essential truths; synthesizing them creates an actionable, bulletproof roadmap."
+                 if not is_hinglish else
+                 f"Dono sides ke valid points ko combine karke hum '{topic_snip}' par ek solid actionable roadmap taiyyar kar sakte hain."),
+                (f"That brings tremendous harmony to the discussion on '{topic_snip}'. Building consensus is what truly drives success."
+                 if not is_hinglish else
+                 f"Aapne discussion ko bohot acchi direction di hai! Consensus building hi '{topic_snip}' me असली jeet hai.")
+            ],
+            "rohan": [
+                (f"Decisive action on '{topic_snip}' is what matters most; fast execution and proactive steps will determine the outcome."
+                 if not is_hinglish else
+                 f"'{topic_snip}' me delay karne se issues badhenge, decisive action aur fast execution hi key hai."),
+                (f"Instead of endless debates on '{topic_snip}', let's define three concrete action steps and start executing immediately."
+                 if not is_hinglish else
+                 f"Lambi discussions ki jagah '{topic_snip}' par immediate actionable milestones set karke start karna chahiye."),
+                (f"Momentum creates its own clarity on '{topic_snip}'. Organizations that move forward boldly always outperform those that hesitate."
+                 if not is_hinglish else
+                 f"Speed aur proactive initiative hi '{topic_snip}' me competition se aage nikalne ka best tarika hai."),
+                (f"Spot on! Focusing on clear execution and measurable results is exactly how to lead on '{topic_snip}'."
+                 if not is_hinglish else
+                 f"Ekdum sahi! Practical results aur rapid action hi '{topic_snip}' me real difference create karega.")
+            ]
         }
 
-    raw = responses.get(pid, responses.get("aarav", "Let us evaluate the verified logic."))
+    persona_pool = pools.get(pid, pools.get("aarav", ["Let us evaluate the verified logic."]))
+    # Pick turn progressively so the persona never repeats the same line
+    selected_text = persona_pool[persona_turn_idx % len(persona_pool)]
+
     if is_addressed:
-        prefix = "To answer your question directly: " if not is_hinglish else "Aapke point par directly bolu toh: "
-        return prefix + raw
-    return raw
+        prefix = (addressed_prefixes_hi.get(pid, "Aapke point par directly bolu toh: ")
+                  if is_hinglish else
+                  addressed_prefixes_en.get(pid, "To answer your question directly: "))
+        return prefix + selected_text
+
+    return selected_text
 
 def advance_mock_turn(
     room: RoomState,
@@ -251,33 +455,35 @@ def advance_mock_turn(
         room.phase = "opening"
         if room.format == "case_based":
             text = (
-                f"Welcome to this Case-Study GD on '{room.topic}'. "
-                "Analyze the stakeholder trade-offs between runway survival and employee morale. Who will begin?"
+                f"Hey everyone, welcome! Please relax, this is a friendly practice space to explore ideas together without any pressure. "
+                f"Today we're tackling a Case-Study GD: '{room.topic}'. Take a breath and feel free to start whenever you're ready. Who would like to open?"
                 if not is_hinglish else
-                f"Welcome everyone! Aaj hum case study discuss kar rahe hain: '{room.topic}'. "
-                "Kon start karega with problem analysis?"
+                f"Hey everyone, welcome! Bilkul relax hokar discuss kijiye, ye ek friendly practice room hai jahan hum sab milkar seekhenge. "
+                f"Aaj ka case study hai: '{room.topic}'. Kaun shuru karna chahega, ya aap shuru karna chahenge?"
             )
         elif room.format == "abstract":
             text = (
-                f"Welcome everyone to this Abstract GD on '{room.topic}'. "
-                "Look beyond literal meanings and present multidimensional interpretations. The floor is open."
+                f"Hello everyone, welcome! There are no wrong answers here, just fresh creative perspectives. "
+                f"Our abstract topic today is '{room.topic}'. Take your time to reflect—who would like to share their initial thoughts?"
                 if not is_hinglish else
-                f"Welcome everyone! Aaj ka abstract topic hai: '{room.topic}'. "
-                "Isko different perspectives se interpret karke initiate kijiye."
+                f"Hello everyone, welcome! Yahan koi right ya wrong answer nahi hai, bas apne unique perspectives openly share kijiye. "
+                f"Aaj ka abstract topic hai: '{room.topic}'. Kaun initiate karna chahega?"
             )
         elif room.format == "fishbowl":
             text = (
-                f"Welcome to the Fishbowl GD on '{room.topic}'. "
-                "Inner circle participants will initiate the debate. Observer may enter the circle when ready."
+                f"Welcome everyone! Relax and enjoy the session. We're running a fishbowl on '{room.topic}'. "
+                "Inner circle will open the chat, and you can step in whenever you feel ready!"
                 if not is_hinglish else
-                f"Welcome to the Fishbowl GD on '{room.topic}'. "
-                "Inner circle se start karenge, jab aap ready ho circle enter karke speak kar sakte hain."
+                f"Welcome everyone! Relax karke participate kijiye. Aaj fishbowl round hai on '{room.topic}'. "
+                "Jab bhi aap comfortable feel karein, circle me enter karke bol sakte hain!"
             )
         else:
             text = (
-                f"Welcome everyone to today's group discussion on '{room.topic}'. Let us anchor our viewpoints in verified empirical evidence. Who would like to initiate?"
+                f"Hey everyone, welcome to the discussion room! Don't stress at all, this is a safe, friendly space to practice and learn together. "
+                f"Today's topic is '{room.topic}'. Feel free to share your thoughts whenever you're ready—who would like to begin?"
                 if not is_hinglish else
-                f"Welcome everyone to today's discussion on '{room.topic}'. Data aur logic ke basis par discuss karte hain. Kon start karega?"
+                f"Hey everyone, welcome to GD Arena! Stress lene ki bilkul zaroorat nahi hai, ye ek friendly practice room hai jahan hum sab milkar seekhenge. "
+                f"Aaj ka topic hai: '{room.topic}'. Kaun start karna chahega, ya aap shuru karna chahenge?"
             )
 
         mod_turn = room.add_turn(
