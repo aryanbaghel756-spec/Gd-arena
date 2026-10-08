@@ -535,13 +535,13 @@ export function useGDSimulator() {
           const mappedSkills: SkillScore[] = (data.criteria_scores || []).map((c: any) => ({
             id: c.criterion,
             title: c.criterion.replace(/_/g, ' ').toUpperCase(),
-            score: Math.min(10, Math.round(c.score * 2)),
+            score: Math.min(100, Math.round(c.score * 20)),
             status: (c.score >= 4 ? 'strength' : c.score >= 3 ? 'good' : 'needs-work') as any,
             badgeText: c.score >= 4 ? 'Exemplary' : c.score >= 3 ? 'Competent' : 'Focus Area',
             feedback: c.feedback,
             quotedMoment: {
               timestamp: '02:40',
-              quote: c.quoted_turn?.quote || 'Strategic intervention on empirical data.',
+              quote: c.quote?.text || c.quoted_turn?.quote || 'Strategic intervention on empirical data.',
               context: c.feedback
             }
           }));
@@ -555,16 +555,35 @@ export function useGDSimulator() {
             isUser: spk === 'student'
           }));
 
+          const mappedImprovementPlan = data.improvement_plan ? {
+            biggestImprovementArea: data.improvement_plan.biggest_improvement_area,
+            nextGDGoals: data.improvement_plan.next_gd_goals || [],
+            practiceChallenge: data.improvement_plan.practice_challenge
+          } : MOCK_REPORT_DATA.improvementPlan;
+
+          const mappedMissed = (data.what_you_could_have_said || []).map((m: any) => ({
+            turnId: m.turn_id,
+            speakerName: m.speaker_name,
+            triggerText: m.trigger_text,
+            studentResponse: m.student_response,
+            aiFeedback: m.ai_feedback,
+            howToImprove: m.how_to_improve,
+            suggestedResponse: m.suggested_response,
+            missedAngle: m.missed_angle
+          }));
+
           setReport({
             overallScore: data.overall_score || 85,
             percentile: Math.min(99, Math.round((data.overall_score || 85) * 0.95 + 4)),
             performanceBadge: (data.overall_score || 85) >= 80 ? 'Strategic Anchor' : 'Collaborative Inquirer',
             summary: data.summary,
             durationSeconds: data.duration_sec || (discussionMinutes * 60 - remainingSeconds),
-            totalExchanges: data.metrics?.total_turns || transcripts.length,
-            interruptionCount: data.metrics?.student_interruptions || 0,
+            totalExchanges: data.total_turns || data.metrics?.total_turns || transcripts.length,
+            interruptionCount: data.metrics?.student_interruptions_count ?? data.metrics?.student_interruptions ?? 0,
             participationShare: shares,
-            skills: mappedSkills
+            skills: mappedSkills.length > 0 ? mappedSkills : MOCK_REPORT_DATA.skills,
+            improvementPlan: mappedImprovementPlan,
+            missedOpportunities: mappedMissed.length > 0 ? mappedMissed : MOCK_REPORT_DATA.missedOpportunities
           });
           setScreen('report');
         })

@@ -24,7 +24,15 @@ export function RoomTable({
   const user = participants.find((p) => p.role === 'user');
   const aiList = participants.filter((p) => p.role === 'ai');
 
+  const anyoneSpeaking = Boolean(activeSpeakerId || isUserSpeaking);
   const activeSpeaker = participants.find((p) => p.id === activeSpeakerId) || (isUserSpeaking ? user : null);
+
+  const getStatus = (p: Participant): 'Speaking' | 'Listening' | 'Waiting' => {
+    const isSelfActive = (p.id === activeSpeakerId) || (p.role === 'user' && isUserSpeaking);
+    if (isSelfActive) return 'Speaking';
+    if (anyoneSpeaking) return 'Listening';
+    return 'Waiting';
+  };
 
   return (
     <div className="relative w-full min-h-[460px] sm:min-h-[520px] flex items-center justify-center p-4">
@@ -93,6 +101,7 @@ export function RoomTable({
             <ParticipantNode
               participant={moderator}
               isActive={activeSpeakerId === moderator.id}
+              status={getStatus(moderator)}
               isUser={false}
             />
           </div>
@@ -104,6 +113,7 @@ export function RoomTable({
             <ParticipantNode
               participant={user}
               isActive={isUserSpeaking}
+              status={getStatus(user)}
               isUser={true}
               audioLevel={userAudioLevel}
             />
@@ -127,6 +137,7 @@ export function RoomTable({
               <ParticipantNode
                 participant={ai}
                 isActive={activeSpeakerId === ai.id}
+                status={getStatus(ai)}
                 isUser={false}
               />
             </div>
@@ -142,11 +153,12 @@ export function RoomTable({
 interface ParticipantNodeProps {
   participant: Participant;
   isActive: boolean;
+  status: 'Speaking' | 'Listening' | 'Waiting';
   isUser: boolean;
   audioLevel?: number;
 }
 
-function ParticipantNode({ participant, isActive, isUser, audioLevel = 0 }: ParticipantNodeProps) {
+function ParticipantNode({ participant, isActive, status, isUser, audioLevel = 0 }: ParticipantNodeProps) {
   return (
     <div
       className={`
@@ -199,23 +211,52 @@ function ParticipantNode({ participant, isActive, isUser, audioLevel = 0 }: Part
           )}
         </div>
 
-        {/* Speaking Status Pill */}
-        {isActive && (
-          <span className="absolute -top-1 px-2 py-0.5 rounded-full bg-[#ff1e2d] text-white text-[9px] font-mono font-bold tracking-wider uppercase shadow-[0_0_8px_#ff1e2d]">
-            SPEAKING
-          </span>
-        )}
+        {/* Speaking / Listening / Waiting Status Pill */}
+        <div className="absolute -top-2 flex justify-center w-full pointer-events-none">
+          {status === 'Speaking' && (
+            <span className="px-2 py-0.5 rounded-full bg-[#ff1e2d] text-white text-[9px] font-mono font-bold tracking-wider uppercase shadow-[0_0_8px_#ff1e2d] animate-pulse whitespace-nowrap">
+              🔴 SPEAKING
+            </span>
+          )}
+          {status === 'Listening' && (
+            <span className="px-2 py-0.5 rounded-full bg-cyan-950/90 text-cyan-300 border border-cyan-500/50 text-[8px] font-mono font-bold tracking-wider uppercase whitespace-nowrap shadow-sm">
+              🎧 LISTENING
+            </span>
+          )}
+          {status === 'Waiting' && (
+            <span className="px-1.5 py-0.5 rounded-full bg-zinc-900/90 text-zinc-400 border border-zinc-700/40 text-[8px] font-mono font-medium tracking-wider uppercase whitespace-nowrap">
+              ⏳ WAITING
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Participant Name & Personality Tag */}
-      <div className="mt-2 text-center max-w-[120px]">
-        <div className="font-display font-bold text-xs text-white truncate drop-shadow-md">
-          {participant.name}
+      {/* Participant Name & Personality Tag + AI/YOU Badge */}
+      <div className="mt-2 text-center max-w-[130px]">
+        <div className="flex items-center justify-center gap-1">
+          <span className="font-display font-bold text-xs text-white truncate drop-shadow-md">
+            {participant.name}
+          </span>
+          {/* Persona Type Badge */}
+          {isUser ? (
+            <span className="px-1 py-0.2 rounded bg-amber-500/20 text-[#ffc400] text-[8px] font-mono font-bold border border-amber-500/40">
+              YOU
+            </span>
+          ) : participant.role === 'moderator' ? (
+            <span className="px-1 py-0.2 rounded bg-purple-500/20 text-purple-300 text-[8px] font-mono font-bold border border-purple-500/40">
+              MOD
+            </span>
+          ) : (
+            <span className="px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 text-[8px] font-mono font-bold border border-rose-500/40">
+              AI
+            </span>
+          )}
         </div>
+
         <div className="flex items-center justify-center gap-1 mt-0.5">
           <span
             className={`
-              text-[9px] font-mono font-semibold uppercase px-1.5 py-0.2 rounded-full border
+              text-[9px] font-mono font-semibold uppercase px-1.5 py-0.2 rounded-full border truncate
               ${isActive
                 ? 'bg-[#ffc400]/20 text-[#ffc400] border-[#ffc400]/60'
                 : 'bg-black/60 text-zinc-400 border-[#2d1825]'
@@ -225,6 +266,16 @@ function ParticipantNode({ participant, isActive, isUser, audioLevel = 0 }: Part
             {participant.personality}
           </span>
         </div>
+
+        {/* Live Mic Audio Level indicator for User */}
+        {isUser && (
+          <div className="w-16 mx-auto h-1.5 bg-zinc-800 rounded-full mt-1 overflow-hidden border border-zinc-700/50">
+            <div 
+              className="h-full bg-gradient-to-r from-emerald-500 to-[#ffc400] transition-all duration-100"
+              style={{ width: `${Math.min(100, Math.max(8, audioLevel * 100))}%` }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

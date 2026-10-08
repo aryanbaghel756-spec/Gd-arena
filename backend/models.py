@@ -184,8 +184,16 @@ class MissedOpportunity(BaseModel):
     turn_id: str
     speaker_name: str
     trigger_text: str
+    student_response: Optional[str] = None
+    ai_feedback: Optional[str] = None
+    how_to_improve: Optional[str] = None
     suggested_response: str
     missed_angle: str
+
+class ImprovementPlan(BaseModel):
+    biggest_improvement_area: str
+    next_gd_goals: List[str]
+    practice_challenge: str
 
 class EndReportResponse(BaseModel):
     room_id: str
@@ -197,6 +205,7 @@ class EndReportResponse(BaseModel):
     metrics: Metrics
     criteria_scores: List[CriterionScore]
     what_you_could_have_said: Optional[List[MissedOpportunity]] = []
+    improvement_plan: Optional[ImprovementPlan] = None
 
 
 # --- Student Profile & Satisfaction ---

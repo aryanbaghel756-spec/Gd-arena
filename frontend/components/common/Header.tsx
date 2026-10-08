@@ -11,6 +11,27 @@ interface HeaderProps {
 }
 
 export function Header({ currentScreen, onNavigate, isLiveDiscussion = false }: HeaderProps) {
+  const [aiEngineStatus, setAiEngineStatus] = React.useState<{ isLive: boolean; provider: string }>({
+    isLive: false,
+    provider: 'Demo Engine'
+  });
+
+  React.useEffect(() => {
+    fetch('/api/health')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && data.status === 'healthy') {
+          setAiEngineStatus({
+            isLive: !data.mock_mode,
+            provider: data.provider || (data.mock_mode ? 'Demo Engine' : 'Ollama LLM')
+          });
+        }
+      })
+      .catch(() => {
+        setAiEngineStatus({ isLive: false, provider: 'Demo Engine' });
+      });
+  }, []);
+
   return (
     <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-[#07070a]/80 border-b border-[#281b22]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
@@ -46,13 +67,25 @@ export function Header({ currentScreen, onNavigate, isLiveDiscussion = false }: 
           </div>
         </div>
 
-        {/* REQUIRED TRANSPARENCY BADGE */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1b1016]/90 border border-[#ff1e2d]/50 shadow-[0_0_12px_rgba(255,30,45,0.2)]">
-          <Bot className="w-3.5 h-3.5 text-[#ffc400] animate-pulse" />
-          <span className="text-xs font-medium text-amber-100 flex items-center gap-1.5">
-            <span className="hidden md:inline text-zinc-400 font-mono text-[11px]">Notice:</span>
-            <span>All participants other than you are AI</span>
-          </span>
+        {/* REQUIRED TRANSPARENCY BADGE & ENGINE STATUS */}
+        <div className="flex items-center gap-2">
+          {/* Live AI vs Demo Mode Pill */}
+          <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono border ${
+            aiEngineStatus.isLive
+              ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+              : 'bg-amber-950/70 text-amber-300 border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.2)]'
+          }`}>
+            <span className={`w-2 h-2 rounded-full ${aiEngineStatus.isLive ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`} />
+            <span>{aiEngineStatus.isLive ? `Live AI (${aiEngineStatus.provider})` : 'Demo Mode (Offline Engine)'}</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1b1016]/90 border border-[#ff1e2d]/50 shadow-[0_0_12px_rgba(255,30,45,0.2)]">
+            <Bot className="w-3.5 h-3.5 text-[#ffc400] animate-pulse" />
+            <span className="text-xs font-medium text-amber-100 flex items-center gap-1.5">
+              <span className="hidden md:inline text-zinc-400 font-mono text-[11px]">Notice:</span>
+              <span>All participants other than you are AI</span>
+            </span>
+          </div>
         </div>
 
         {/* Right Navigation / Status Dock */}

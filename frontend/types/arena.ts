@@ -4,6 +4,8 @@ export type PersonaTag =
   | 'Analyst' 
   | 'Critic' 
   | 'Creative' 
+  | 'Collaborator'
+  | 'Debater'
   | 'Quiet one' 
   | 'Dominator' 
   | 'Moderator' 
@@ -48,7 +50,7 @@ export interface TranscriptItem {
 export interface SkillScore {
   id: string;
   title: string;
-  score: number; // out of 10
+  score: number; // out of 10 or 100
   status: 'strength' | 'needs-work' | 'good';
   badgeText: string;
   feedback: string;
@@ -68,6 +70,34 @@ export interface ParticipationShare {
   isUser?: boolean;
 }
 
+export interface ImprovementPlan {
+  biggestImprovementArea: string;
+  nextGDGoals: string[];
+  practiceChallenge: string;
+}
+
+export interface MissedOpportunity {
+  turnId: string;
+  speakerName: string;
+  triggerText: string;
+  studentResponse?: string;
+  aiFeedback?: string;
+  howToImprove?: string;
+  suggestedResponse: string;
+  missedAngle: string;
+}
+
+export interface PastSessionRecord {
+  sessionId: string;
+  sessionNumber: number;
+  topic: string;
+  overallScore: number;
+  speakingScore: number;
+  listeningScore: number;
+  ideasScore: number;
+  date: string;
+}
+
 export interface GDReport {
   overallScore: number; // e.g. 86 / 100
   percentile: number;   // e.g. 88 (top 12%)
@@ -78,6 +108,8 @@ export interface GDReport {
   interruptionCount: number;
   participationShare: ParticipationShare[];
   skills: SkillScore[];
+  improvementPlan?: ImprovementPlan;
+  missedOpportunities?: MissedOpportunity[];
 }
 
 export interface FactDataPoint {

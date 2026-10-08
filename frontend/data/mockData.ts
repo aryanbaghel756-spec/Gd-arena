@@ -1,4 +1,4 @@
-import { Topic, Participant, SkillScore, GDReport, TranscriptItem, TopicFacts } from '@/types/arena';
+import { Topic, Participant, SkillScore, GDReport, TranscriptItem, TopicFacts, PastSessionRecord } from '@/types/arena';
 
 export const VERIFIED_TOPIC_FACTS: Record<string, TopicFacts> = {
   'stock-market-nifty': {
@@ -299,10 +299,10 @@ export const TOPIC_PRESETS: Topic[] = [
 export const MOCK_PARTICIPANTS: Participant[] = [
   {
     id: 'mod',
-    name: 'Dr. Evelyn Vance',
+    name: 'Dr. Verma',
     role: 'moderator',
     personality: 'Moderator',
-    tagline: 'Guiding flow, enforcing fairness, and synthesizing milestones',
+    tagline: 'Introduces topic, guides turn flow, enforces fairness, and tracks time',
     avatarSeed: 'moderator',
     color: '#ffc400',
     accentGlow: 'rgba(255, 196, 0, 0.5)',
@@ -312,10 +312,10 @@ export const MOCK_PARTICIPANTS: Participant[] = [
   },
   {
     id: 'p-analyst',
-    name: 'Aarav Mehta',
+    name: 'Aarav',
     role: 'ai',
     personality: 'Analyst',
-    tagline: 'Deconstructs problems with quantitative logic and risk frameworks',
+    tagline: 'Logical, evidence-oriented, focuses on facts, cause & effect, challenges unsupported claims',
     avatarSeed: 'analyst',
     color: '#ff1e2d',
     accentGlow: 'rgba(255, 30, 45, 0.45)',
@@ -324,24 +324,11 @@ export const MOCK_PARTICIPANTS: Participant[] = [
     audioLevel: 0
   },
   {
-    id: 'p-critic',
-    name: 'Priya Sharma',
-    role: 'ai',
-    personality: 'Critic',
-    tagline: 'Tests hidden assumptions, interrogates blindspots, and pressure-tests claims',
-    avatarSeed: 'critic',
-    color: '#ff4d5a',
-    accentGlow: 'rgba(255, 77, 90, 0.45)',
-    talkTimeSeconds: 84,
-    isSpeaking: false,
-    audioLevel: 0
-  },
-  {
     id: 'p-creative',
-    name: 'Rohan Kapoor',
+    name: 'Meera',
     role: 'ai',
     personality: 'Creative',
-    tagline: 'Introduces unorthodox lateral analogies and cross-industry paradigms',
+    tagline: 'Innovative, introduces unconventional ideas, explores alternative solutions',
     avatarSeed: 'creative',
     color: '#ffa834',
     accentGlow: 'rgba(255, 168, 52, 0.45)',
@@ -350,28 +337,41 @@ export const MOCK_PARTICIPANTS: Participant[] = [
     audioLevel: 0
   },
   {
-    id: 'p-quiet',
-    name: 'Maya Sen',
+    id: 'p-critic',
+    name: 'Kabir',
     role: 'ai',
-    personality: 'Quiet one',
-    tagline: 'Patient, speaks infrequently, but delivers precise thematic tie-ups',
-    avatarSeed: 'quiet',
-    color: '#e6a100',
-    accentGlow: 'rgba(230, 161, 0, 0.45)',
-    talkTimeSeconds: 38,
+    personality: 'Critic',
+    tagline: 'Skeptical, identifies weaknesses & risks, tests assumptions with respectful counterarguments',
+    avatarSeed: 'critic',
+    color: '#ff4d5a',
+    accentGlow: 'rgba(255, 77, 90, 0.45)',
+    talkTimeSeconds: 84,
     isSpeaking: false,
     audioLevel: 0
   },
   {
-    id: 'p-dominator',
-    name: 'Vikram Singhania',
+    id: 'p-collaborator',
+    name: 'Ananya',
     role: 'ai',
-    personality: 'Dominator',
-    tagline: 'Fast-paced, aggressive verbal tempo, demands constant floor retention',
-    avatarSeed: 'dominator',
-    color: '#b80010',
-    accentGlow: 'rgba(184, 0, 16, 0.55)',
-    talkTimeSeconds: 95,
+    personality: 'Collaborator',
+    tagline: 'Balanced, listens carefully, connects different viewpoints, builds constructive discussion',
+    avatarSeed: 'collaborator',
+    color: '#00d26a',
+    accentGlow: 'rgba(0, 210, 106, 0.45)',
+    talkTimeSeconds: 58,
+    isSpeaking: false,
+    audioLevel: 0
+  },
+  {
+    id: 'p-debater',
+    name: 'Rohan',
+    role: 'ai',
+    personality: 'Debater',
+    tagline: 'Confident, persuasive, challenges arguments strongly, defends positions respectfully',
+    avatarSeed: 'debater',
+    color: '#ff626e',
+    accentGlow: 'rgba(255, 98, 110, 0.45)',
+    talkTimeSeconds: 72,
     isSpeaking: false,
     audioLevel: 0
   },
@@ -464,20 +464,20 @@ export const MOCK_REPORT_DATA: GDReport = {
   interruptionCount: 3,
   participationShare: [
     { participantId: 'user', name: 'You', percentage: 22, seconds: 108, color: '#ffc400', isUser: true },
-    { participantId: 'p-dominator', name: 'Vikram (Dominator)', percentage: 24, seconds: 118, color: '#ff1e2d' },
+    { participantId: 'p-critic', name: 'Kabir (Critic)', percentage: 24, seconds: 118, color: '#ff1e2d' },
     { participantId: 'p-analyst', name: 'Aarav (Analyst)', percentage: 19, seconds: 93, color: '#ff626e' },
-    { participantId: 'p-critic', name: 'Priya (Critic)', percentage: 17, seconds: 83, color: '#e65100' },
-    { participantId: 'p-creative', name: 'Rohan (Creative)', percentage: 11, seconds: 54, color: '#ffa834' },
-    { participantId: 'mod', name: 'Moderator', percentage: 7, seconds: 35, color: '#7a7a85' },
+    { participantId: 'p-creative', name: 'Meera (Creative)', percentage: 17, seconds: 83, color: '#e65100' },
+    { participantId: 'p-debater', name: 'Rohan (Debater)', percentage: 11, seconds: 54, color: '#ffa834' },
+    { participantId: 'mod', name: 'Dr. Verma (Moderator)', percentage: 7, seconds: 35, color: '#7a7a85' },
   ],
   skills: [
     {
       id: 'skill-starting',
       title: 'Starting the Discussion',
-      score: 9.0,
+      score: 82,
       status: 'strength',
       badgeText: 'Decisive Initiative',
-      feedback: 'You took command within the first 30 seconds with a crisp definition rather than generic platitudes. This established the structural baseline that the rest of the panel referenced throughout.',
+      feedback: 'You initiated within the first 30 seconds with a crisp definition rather than generic platitudes. This established the structural baseline that the panel referenced throughout.',
       quotedMoment: {
         timestamp: '00:32',
         quote: '"I would like to initiate by framing this dilemma across two distinct dimensions: sovereign computational autonomy versus immediate economic return on capital."',
@@ -487,67 +487,131 @@ export const MOCK_REPORT_DATA: GDReport = {
     {
       id: 'skill-ideas',
       title: 'Quality of Ideas & Substantiation',
-      score: 8.5,
+      score: 84,
       status: 'strength',
       badgeText: 'High Signal',
-      feedback: 'Your points combined conceptual clarity with concrete analogies. The distinction between public compute utility and private foundation models kept the group from falling into a false dichotomy.',
+      feedback: 'Your points combined conceptual clarity with concrete analogies. The distinction between public compute utility and private foundation models kept the group grounded.',
       quotedMoment: {
         timestamp: '02:45',
         quote: '"We must differentiate between state-funded compute grids as public utilities versus subsidizing private frontier LLMs. The power grid model applies cleanly here."',
-        context: 'Intervening when Priya and Vikram reached an ideological standoff.'
+        context: 'Intervening when Kabir and Rohan reached an ideological standoff.'
       }
     },
     {
       id: 'skill-building',
       title: 'Building on Others',
-      score: 8.0,
+      score: 67,
       status: 'good',
       badgeText: 'Collaborative Bridge',
-      feedback: 'You acknowledged Aarav’s cost metrics before expanding with your utility parallel, demonstrating that you were synthesizing rather than merely waiting for your turn to speak.',
+      feedback: 'You acknowledged Aarav’s cost metrics before expanding with your utility parallel, demonstrating that you were synthesizing rather than waiting for your turn.',
       quotedMoment: {
         timestamp: '03:40',
-        quote: '"Rohan’s Scandinavian fiber analogy directly solves the capital lockup Aarav warned about earlier—we can lease off-peak compute hours to private research."',
+        quote: '"Meera’s open research analogy directly solves the capital lockup Aarav warned about earlier—we can lease off-peak compute hours to private research."',
         context: 'Connecting two divergent perspectives into a unified compromise solution.'
       }
     },
     {
       id: 'skill-listening',
       title: 'Active Listening & Inclusivity',
-      score: 8.5,
-      status: 'strength',
-      badgeText: 'Panel Awareness',
-      feedback: 'When Maya was overshadowed by Vikram’s rapid-fire delivery, you created an explicit entry wedge to invite her input, which moderators consistently rate as a high-tier leadership signal.',
+      score: 61,
+      status: 'needs-work',
+      badgeText: 'Needs Focus',
+      feedback: 'When Kabir raised valid labor displacement concerns, you introduced a counter without directly acknowledging his friction point first.',
       quotedMoment: {
         timestamp: '04:55',
-        quote: '"Before we proceed to the export restrictions, Maya had raised an intriguing angle about talent retention that we should hear out."',
-        context: 'De-escalating an aggressive floor monologue from Vikram.'
+        quote: '"AI will definitely create more jobs in deep tech rather than taking them away."',
+        context: 'Responding to Kabir without explicitly validating his short-term displacement point.'
       }
     },
     {
       id: 'skill-interruptions',
       title: 'Handling Interruptions',
-      score: 7.5,
-      status: 'needs-work',
+      score: 75,
+      status: 'good',
       badgeText: 'Assertive Recovery',
-      feedback: 'When interrupted by the Dominator at 01:52, you yielded ground slightly too quickly. Practice holding your cadence for one more sentence with courteous phrases like "Allow me 10 seconds to finish the premise, Vikram."',
+      feedback: 'When interrupted during the mid-discussion heat, you yielded ground slightly too quickly. Hold your cadence with polite phrasing like "Allow me 10 seconds to finish the premise, Kabir."',
       quotedMoment: {
         timestamp: '01:50',
-        quote: '"—and therefore the capital recovery window— [cut off by Vikram: \'If you wait for economic parity...\']"',
+        quote: '"—and therefore the capital recovery window— [cut off by Rohan: \'If you wait for economic parity...\']"',
         context: 'Mid-sentence yield during the early heated discussion phase.'
       }
     },
     {
       id: 'skill-ending',
       title: 'Ending Strongly & Synthesis',
-      score: 9.0,
-      status: 'strength',
+      score: 70,
+      status: 'good',
       badgeText: 'Executive Closure',
-      feedback: 'Your closing summary in the final round brought together all 3 divergent threads (sovereignty, fiscal pragmatism, public utility model) into a decisive, non-repetitive consensus verdict.',
+      feedback: 'Your closing summary in the final round brought together divergent threads into a decisive, non-repetitive consensus verdict.',
       quotedMoment: {
         timestamp: '07:28',
         quote: '"In conclusion, the panel converges on a hybrid doctrine: sovereign ownership of compute infrastructure paired with open market application development."',
         context: 'Final 40 seconds closing round summary.'
       }
     }
+  ],
+  improvementPlan: {
+    biggestImprovementArea: 'Active Listening & Collaborative Building (Dusron ki baat ko sunkar connect karna)',
+    nextGDGoals: [
+      'Acknowledge another participant\'s point at least twice before introducing your own argument.',
+      'Avoid abruptly shifting the direction of discussion; use transitional bridge sentences (jaise: "Bhai bilkul valid point hai, par...").',
+      'Add your own argument after referencing someone else\'s specific point.'
+    ],
+    practiceChallenge: 'Build on another speaker\'s argument 2 times during your next GD session.'
+  },
+  missedOpportunities: [
+    {
+      turnId: 't-4',
+      speakerName: 'Kabir',
+      triggerText: 'AI will cause immediate short-term labor dislocation across entry-level services before any new jobs materialize.',
+      studentResponse: 'AI will definitely create more jobs overall in the technology space.',
+      aiFeedback: 'You changed the direction of the discussion without directly addressing Kabir\'s immediate employment risk concern.',
+      howToImprove: 'Before presenting your own argument, acknowledge one important point made by the previous speaker, then pivot with empirical data.',
+      suggestedResponse: 'I acknowledge Kabir\'s risk concern regarding immediate dislocation, but according to WEF data, the transition can be cushioned through targeted public upskilling programs.',
+      missedAngle: 'Pivoting from peer risk to proactive institutional policy with empirical evidence'
+    },
+    {
+      turnId: 't-3',
+      speakerName: 'Aarav',
+      triggerText: 'Historically, technology has created net positive categories of work, but the capital expenditure curve is steep.',
+      studentResponse: 'We have to move fast regardless of the capital cost.',
+      aiFeedback: 'Aarav provided quantitative capital metrics; you missed anchoring his numerical framework into your counter.',
+      howToImprove: 'Directly reference Aarav\'s metric and show how sovereign utility models offset the capital lockup.',
+      suggestedResponse: 'Building on Aarav\'s capital curve, treating compute infrastructure as a national public utility (similar to power grids) distributes that upfront cost across 20 years.',
+      missedAngle: 'Substantiating peer quantitative baseline'
+    }
   ]
 };
+
+export const MOCK_PAST_SESSIONS: PastSessionRecord[] = [
+  {
+    sessionId: 'sess-1',
+    sessionNumber: 1,
+    topic: 'Remote Work vs. Return to Office',
+    overallScore: 68,
+    speakingScore: 61,
+    listeningScore: 48,
+    ideasScore: 70,
+    date: 'Yesterday'
+  },
+  {
+    sessionId: 'sess-2',
+    sessionNumber: 2,
+    topic: 'Mandatory 75% Attendance in Colleges',
+    overallScore: 74,
+    speakingScore: 69,
+    listeningScore: 62,
+    ideasScore: 73,
+    date: 'Today, 11:30 AM'
+  },
+  {
+    sessionId: 'sess-3',
+    sessionNumber: 3,
+    topic: 'Will AI Create More Jobs Than It Destroys?',
+    overallScore: 86,
+    speakingScore: 78,
+    listeningScore: 71,
+    ideasScore: 81,
+    date: 'Just now'
+  }
+];
