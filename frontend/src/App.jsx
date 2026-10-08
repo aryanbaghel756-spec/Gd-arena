@@ -4,7 +4,8 @@ import {
   ShieldCheck, AlertTriangle, ArrowRight, Award, CheckCircle2, ChevronRight,
   TrendingUp, BookOpen, Clock, Activity, Zap, RefreshCw, X, UserPlus, Radio,
   BarChart3, FileText, CornerDownRight, Lightbulb, Copy, Check, Printer,
-  VolumeX, Gauge, Share2, Compass, HelpCircle, ChevronDown
+  VolumeX, Gauge, Share2, Compass, HelpCircle, ChevronDown, User, Edit3,
+  Save, Calendar, History, Target, GraduationCap
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -77,7 +78,7 @@ const AudioSpectrum = ({ isActive, color = 'cyan' }) => {
 
 export default function App() {
   // Navigation / View State
-  const [currentView, setCurrentView] = useState('templates'); // 'templates' | 'arena' | 'report' | 'roadmap'
+  const [currentView, setCurrentView] = useState('templates'); // 'templates' | 'arena' | 'report' | 'profile'
   const [activeTab, setActiveTab] = useState('all');
 
   // Room Setup State
@@ -111,9 +112,15 @@ export default function App() {
   // Report & Roadmap State
   const [reportData, setReportData] = useState(null);
   const [studentProfile, setStudentProfile] = useState(null);
+  const [pastReports, setPastReports] = useState([]);
   const [roomFacts, setRoomFacts] = useState(null);
   const [showFactsModal, setShowFactsModal] = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
+
+  // Profile Edit State
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameInputValue, setNameInputValue] = useState('');
+  const [switcherIdInput, setSwitcherIdInput] = useState('');
 
   // System & Health
   const [systemHealth, setSystemHealth] = useState({ status: 'connecting', mock_mode: true });
@@ -145,11 +152,12 @@ export default function App() {
     };
   }, [currentView]);
 
-  // Initial Load: Fetch Health, Topics, Student Profile
+  // Initial Load: Fetch Health, Topics, Student Profile & Reports
   useEffect(() => {
     checkHealth();
     fetchTopics();
-    fetchStudentProfile();
+    fetchStudentProfile(studentId);
+    fetchStudentPastReports(studentId);
     initSpeechRecognition();
 
     if ('speechSynthesis' in window) {
@@ -186,16 +194,55 @@ export default function App() {
     }
   };
 
-  const fetchStudentProfile = async () => {
+  const fetchStudentProfile = async (sId = studentId) => {
     try {
-      const res = await fetch(`${API_BASE}/api/students/${studentId}/profile`);
+      const res = await fetch(`${API_BASE}/api/students/${sId}/profile`);
       if (res.ok) {
         const data = await res.json();
         setStudentProfile(data);
+        setNameInputValue(data.name || '');
       }
     } catch (err) {
       console.error('Failed to load profile:', err);
     }
+  };
+
+  const fetchStudentPastReports = async (sId = studentId) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/students/${sId}/reports`);
+      if (res.ok) {
+        const data = await res.json();
+        setPastReports(data.reports || []);
+      }
+    } catch (err) {
+      console.error('Failed to load past reports:', err);
+    }
+  };
+
+  const handleSaveStudentName = async () => {
+    if (!nameInputValue.trim()) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/students/${studentId}/name`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: nameInputValue.trim() })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setStudentProfile(data);
+        setIsEditingName(false);
+      }
+    } catch (err) {
+      alert('Error updating name: ' + err);
+    }
+  };
+
+  const handleSwitchStudent = (newId) => {
+    if (!newId || !newId.trim()) return;
+    const cleanId = newId.trim();
+    setStudentId(cleanId);
+    fetchStudentProfile(cleanId);
+    fetchStudentPastReports(cleanId);
   };
 
   // --- Voice Engine (Sweet Natural Voice Selection) ---
@@ -492,7 +539,7 @@ export default function App() {
       {
         id: 'user_' + Date.now(),
         speaker_id: 'student',
-        speaker_name: 'You',
+        speaker_name: studentProfile?.name || 'You',
         role: 'student',
         text: text.trim(),
         t_ms: Date.now(),
@@ -501,7 +548,7 @@ export default function App() {
     ]);
 
     setActiveSpeakerId('student');
-    setCaptionText(`You: "${text.trim()}"`);
+    setCaptionText(`${studentProfile?.name || 'You'}: "${text.trim()}"`);
     advanceTurn(currentRoom?.room_id, text.trim(), intId);
   };
 
@@ -552,7 +599,8 @@ export default function App() {
       const data = await res.json();
       setReportData(data);
       setCurrentView('report');
-      fetchStudentProfile();
+      fetchStudentProfile(studentId);
+      fetchStudentPastReports(studentId);
     } catch (err) {
       alert('Error generating report: ' + err);
     }
@@ -682,12 +730,17 @@ ${reportData.criteria_scores?.map(c => `• ${c.criterion}: ${c.score}/5 - ${c.f
             </button>
           )}
           <button
-            onClick={() => setCurrentView('roadmap')}
-            className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-              currentView === 'roadmap' ? 'bg-[#27272a] text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+            onClick={() => {
+              setCurrentView('profile');
+              fetchStudentProfile(studentId);
+              fetchStudentPastReports(studentId);
+            }}
+            className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+              currentView === 'profile' ? 'bg-cyan-500/20 text-cyan-300 shadow-sm border border-cyan-500/30' : 'text-zinc-400 hover:text-white'
             }`}
           >
-            My Progress 🎯
+            <User className="w-3.5 h-3.5" />
+            <span>Student Profile</span>
           </button>
         </div>
 
@@ -996,7 +1049,7 @@ ${reportData.criteria_scores?.map(c => `• ${c.criterion}: ${c.score}/5 - ${c.f
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-bold text-white truncate">You (Discussant)</span>
+                        <span className="text-sm font-bold text-white truncate">{studentProfile?.name || 'You'} (Discussant)</span>
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">HUMAN</span>
                       </div>
                       <p className="text-xs text-zinc-400">Student Floor</p>
@@ -1420,78 +1473,274 @@ ${reportData.criteria_scores?.map(c => `• ${c.criterion}: ${c.score}/5 - ${c.f
           </div>
         )}
 
-        {/* VIEW 4: STUDENT LEARNING ROADMAP & PROGRESS */}
-        {currentView === 'roadmap' && studentProfile && (
-          <div className="max-w-4xl mx-auto w-full px-4 lg:px-8 py-8 space-y-6">
-            <div className="border-b border-zinc-800 pb-4">
-              <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-md border border-cyan-500/20">
-                Persistent Memory & Progress
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
-                Student Progress & Knowledge Retention
-              </h2>
-              <p className="text-xs sm:text-sm text-zinc-400 mt-0.5">
-                Saved in SQLite across sessions so AI peers remember your strengths!
-              </p>
+        {/* VIEW 4: DEDICATED STUDENT PROFILE & PLACEMENT PASSPORT */}
+        {currentView === 'profile' && studentProfile && (
+          <div className="max-w-6xl mx-auto w-full px-4 lg:px-8 py-8 space-y-8">
+            {/* 1. Profile Header & Identity Card */}
+            <div className="glass-card p-6 sm:p-8 rounded-3xl border border-zinc-800 relative overflow-hidden shadow-2xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+                <div className="flex items-center gap-5">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-cyan-500 via-sky-400 to-indigo-600 flex items-center justify-center font-extrabold text-2xl sm:text-3xl text-black shadow-xl shadow-cyan-500/25 ring-2 ring-cyan-400/50">
+                    {studentProfile.name ? studentProfile.name[0].toUpperCase() : 'A'}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-3">
+                      {!isEditingName ? (
+                        <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                          {studentProfile.name}
+                        </h2>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={nameInputValue}
+                            onChange={e => setNameInputValue(e.target.value)}
+                            className="bg-zinc-900 border border-cyan-500 rounded-lg px-3 py-1 text-lg font-bold text-white outline-none"
+                            placeholder="Enter your name"
+                          />
+                          <button
+                            onClick={handleSaveStudentName}
+                            className="p-1.5 bg-emerald-500 hover:bg-emerald-400 text-black rounded-lg cursor-pointer transition-all"
+                            title="Save Name"
+                          >
+                            <Save className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+
+                      {!isEditingName && (
+                        <button
+                          onClick={() => setIsEditingName(true)}
+                          className="text-zinc-500 hover:text-cyan-400 p-1 transition-colors cursor-pointer"
+                          title="Edit Student Name"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                      )}
+
+                      <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/25">
+                        Placement Ready
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-400">
+                      <span className="font-mono text-zinc-500">ID: {studentProfile.student_id}</span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1 text-zinc-300">
+                        <GraduationCap className="w-3.5 h-3.5 text-cyan-400" />
+                        Target: Software Engineer & Analyst Rounds
+                      </span>
+                      <span>•</span>
+                      <span className="text-zinc-500">Persistent SQLite Memory Active</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Profile Switcher / Switch User */}
+                <div className="flex flex-col sm:items-end gap-2 border-t sm:border-t-0 border-zinc-800 pt-3 sm:pt-0">
+                  <span className="text-[11px] font-semibold text-zinc-400">Switch Candidate ID:</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. student_rahul_02"
+                      value={switcherIdInput}
+                      onChange={e => setSwitcherIdInput(e.target.value)}
+                      className="bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1 text-xs text-white placeholder-zinc-500 outline-none focus:border-cyan-500 w-36"
+                    />
+                    <button
+                      onClick={() => handleSwitchStudent(switcherIdInput)}
+                      className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold rounded-lg text-zinc-200 border border-zinc-700 cursor-pointer transition-all"
+                    >
+                      Switch
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Profile Overview Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="p-4 rounded-2xl glass-card text-center shadow-md">
-                <span className="text-xs text-zinc-400">Sessions Practiced</span>
-                <span className="text-2xl font-extrabold text-white block mt-1">{studentProfile.total_sessions}</span>
+            {/* 2. Key Performance Metrics Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="p-5 rounded-2xl glass-card text-center shadow-lg">
+                <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider block">GD Sessions</span>
+                <span className="text-3xl font-extrabold text-white mt-1 block">{studentProfile.total_sessions}</span>
+                <span className="text-[11px] text-zinc-500 mt-1 block">Live Debates Completed</span>
               </div>
-              <div className="p-4 rounded-2xl glass-card text-center shadow-md">
-                <span className="text-xs text-zinc-400">Average GD Score</span>
-                <span className="text-2xl font-extrabold text-cyan-400 block mt-1">{studentProfile.avg_score} / 100</span>
+
+              <div className="p-5 rounded-2xl glass-card text-center shadow-lg">
+                <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider block">Average GD Score</span>
+                <span className="text-3xl font-extrabold text-cyan-400 mt-1 block">{studentProfile.average_score || studentProfile.avg_score || 0}</span>
+                <span className="text-[11px] text-zinc-500 mt-1 block">Out of 100 Scale</span>
               </div>
-              <div className="col-span-2 sm:col-span-1 p-4 rounded-2xl glass-card text-center shadow-md">
-                <span className="text-xs text-zinc-400">Concepts Retained</span>
-                <span className="text-2xl font-extrabold text-emerald-400 block mt-1">{studentProfile.known_concepts?.length || 0}</span>
+
+              <div className="p-5 rounded-2xl glass-card text-center shadow-lg">
+                <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider block">Concepts Mastered</span>
+                <span className="text-3xl font-extrabold text-emerald-400 mt-1 block">{studentProfile.known_concepts?.length || 0}</span>
+                <span className="text-[11px] text-zinc-500 mt-1 block">Verified & Retained</span>
+              </div>
+
+              <div className="p-5 rounded-2xl glass-card text-center shadow-lg">
+                <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider block">Placement Readiness</span>
+                <span className="text-3xl font-extrabold text-purple-400 mt-1 block">Tier 1</span>
+                <span className="text-[11px] text-zinc-500 mt-1 block">Top 10% Benchmark</span>
               </div>
             </div>
 
-            {/* Retained Concepts ("Isse Ye Aata Hai") */}
-            <div className="glass-card p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-md">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Verified Concepts Mastered ('Isse Ye Aata Hai')</span>
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {studentProfile.known_concepts?.map((c, idx) => (
-                  <span key={idx} className="text-xs px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-semibold">
-                    ✓ {c}
-                  </span>
-                ))}
+            {/* 3. Two Column Details: Mastered Concepts vs Weak Areas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Mastered Concepts ("Isse Ye Aata Hai") */}
+              <div className="glass-card p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-lg">
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Verified Mastered Concepts ("Isse Ye Aata Hai")</span>
+                  </h3>
+                  <span className="text-xs font-mono text-zinc-500">{studentProfile.known_concepts?.length || 0} total</span>
+                </div>
+
+                <div className="space-y-2">
+                  {studentProfile.known_concepts?.map((c, idx) => (
+                    <div key={idx} className="p-3 rounded-xl bg-zinc-900/90 border border-zinc-800 flex items-start gap-2.5">
+                      <span className="text-emerald-400 font-bold shrink-0 mt-0.5">✓</span>
+                      <p className="text-xs text-zinc-200 leading-relaxed font-medium">{c}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Weak Areas & Targeted Polish */}
+              <div className="glass-card p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-lg">
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>Focus Areas & Feedback Directives</span>
+                  </h3>
+                  <span className="text-xs font-mono text-zinc-500">{studentProfile.weak_areas?.length || 0} areas</span>
+                </div>
+
+                <div className="space-y-2">
+                  {studentProfile.weak_areas?.map((w, idx) => (
+                    <div key={idx} className="p-3 rounded-xl bg-zinc-900/90 border border-zinc-800 flex items-start gap-2.5">
+                      <span className="text-amber-400 font-bold shrink-0 mt-0.5">⚡</span>
+                      <p className="text-xs text-zinc-200 leading-relaxed font-medium">{w}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Placement Roadmap Milestones */}
-            <div className="glass-card p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-md">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                <span>Placement Learning Roadmap</span>
-              </h3>
+            {/* 4. Placement Learning Roadmap */}
+            <div className="glass-card p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-lg">
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  <span>Placement Preparation Roadmap Milestones</span>
+                </h3>
+                <span className="text-xs text-zinc-500">Dynamic AI Progression</span>
+              </div>
 
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {studentProfile.roadmap?.map((m, idx) => (
-                  <div key={idx} className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-between">
-                    <div>
-                      <span className="text-xs text-zinc-500">Milestone {idx + 1}</span>
+                  <div key={idx} className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 flex flex-col justify-between space-y-3">
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-mono text-zinc-500">Phase 0{idx + 1}</span>
                       <h4 className="text-sm font-bold text-white">{m.goal}</h4>
                     </div>
-                    <span className={`text-xs px-2.5 py-1 rounded-md font-bold uppercase ${
-                      m.status === 'completed'
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                        : m.status === 'in_progress'
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                        : 'bg-zinc-800 text-zinc-400'
-                    }`}>
-                      {m.status}
-                    </span>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                        m.status === 'completed'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          : m.status === 'in_progress'
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                          : 'bg-zinc-800 text-zinc-400'
+                      }`}>
+                        {m.status}
+                      </span>
+
+                      {m.recommended_topic && (
+                        <span className="text-[10px] text-zinc-500 truncate max-w-[120px]">
+                          Topic: {m.recommended_topic}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* 5. Past GD Discussion History (Live SQLite Reports Table) */}
+            <div className="glass-card p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-lg">
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                  <History className="w-4 h-4 text-cyan-400" />
+                  <span>Discussion Session History (Persisted in SQLite)</span>
+                </h3>
+                <span className="text-xs font-mono text-zinc-400">{pastReports.length} sessions logged</span>
+              </div>
+
+              {pastReports.length === 0 ? (
+                <div className="py-8 text-center text-zinc-500 text-xs">
+                  No practice sessions recorded yet for {studentProfile.name}. Click "Topic Templates" to launch your first session!
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-zinc-800 text-zinc-400 font-semibold uppercase tracking-wider text-[10px]">
+                        <th className="pb-3 px-3">Date</th>
+                        <th className="pb-3 px-3">Topic Title</th>
+                        <th className="pb-3 px-3 text-center">Score</th>
+                        <th className="pb-3 px-3">Assessor Verdict</th>
+                        <th className="pb-3 px-3 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/60">
+                      {pastReports.map((r, idx) => {
+                        const dateStr = r.created_at_ms
+                          ? new Date(r.created_at_ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                          : 'Recent';
+
+                        return (
+                          <tr key={idx} className="hover:bg-zinc-900/60 transition-colors">
+                            <td className="py-3 px-3 font-mono text-zinc-400 text-[11px] whitespace-nowrap">
+                              {dateStr}
+                            </td>
+                            <td className="py-3 px-3 font-bold text-white max-w-xs truncate">
+                              {r.topic}
+                            </td>
+                            <td className="py-3 px-3 text-center">
+                              <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
+                                r.overall_score >= 80
+                                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                  : r.overall_score >= 65
+                                  ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
+                                  : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                              }`}>
+                                {r.overall_score} / 100
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-zinc-300 max-w-sm truncate text-[11px]">
+                              {r.summary}
+                            </td>
+                            <td className="py-3 px-3 text-right whitespace-nowrap">
+                              <button
+                                onClick={() => {
+                                  setReportData(r);
+                                  setCurrentView('report');
+                                }}
+                                className="px-2.5 py-1 bg-zinc-800 hover:bg-cyan-500 hover:text-black text-zinc-300 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+                              >
+                                View Scorecard →
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}

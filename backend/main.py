@@ -30,7 +30,7 @@ from .mock_engine import get_mock_topics, register_custom_topic, advance_mock_tu
 from .moderator import advance_room_turn
 from .report_generator import generate_gd_report
 from .facts_db import get_facts_for_topic
-from .database import get_or_create_student
+from .database import get_or_create_student, get_student_reports, update_student_name
 
 app = FastAPI(
     title="GD Arena API",
@@ -298,3 +298,19 @@ async def get_student_roadmap(id: str):
         "known_concepts": profile["known_concepts"],
         "weak_areas": profile["weak_areas"]
     }
+
+@app.get("/api/students/{id}/reports")
+async def get_student_past_reports(id: str):
+    reports = get_student_reports(id)
+    return {
+        "student_id": id,
+        "total": len(reports),
+        "reports": reports
+    }
+
+@app.post("/api/students/{id}/name")
+async def update_student_display_name(id: str, payload: dict):
+    new_name = payload.get("name", "Student Discussant")
+    updated = update_student_name(id, new_name)
+    return updated
+

@@ -432,3 +432,30 @@ def test_kabir_multi_turn_non_repetitive():
     assert t1_text != t2_text, f"Kabir repeated the same answer: {t1_text}"
 
 
+def test_student_reports_and_name_update():
+    """Verify that student can update display name and retrieve past GD reports history."""
+    # Update student name
+    name_res = client.post("/api/students/student_aryan_01/name", json={"name": "Aryan Baghel"})
+    assert name_res.status_code == 200
+    assert name_res.json()["name"] == "Aryan Baghel"
+
+    # End a session to generate a report
+    create_res = client.post("/api/rooms", json={
+        "topic": "75% Mandatory Attendance: Academic Rigor or Pointless Policing?",
+        "student_id": "student_aryan_01"
+    })
+    room_id = create_res.json()["room_id"]
+    client.post(f"/api/rooms/{room_id}/next", json={})
+    client.post(f"/api/rooms/{room_id}/next", json={"student_text": "Practical labs matter more than theoretical lectures."})
+    client.post(f"/api/rooms/{room_id}/end")
+
+    # Fetch past reports
+    rep_res = client.get("/api/students/student_aryan_01/reports")
+    assert rep_res.status_code == 200
+    data = rep_res.json()
+    assert data["student_id"] == "student_aryan_01"
+    assert data["total"] >= 1
+    assert any("Attendance" in r["topic"] for r in data["reports"])
+
+
+

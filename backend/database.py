@@ -226,3 +226,40 @@ def update_student_progress(
     conn.close()
 
     return get_or_create_student(student_id)
+
+
+def get_student_reports(student_id: str) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT room_id, student_id, topic, overall_score, summary, metrics_json, criteria_scores_json, created_at_ms
+    FROM reports
+    WHERE student_id = ?
+    ORDER BY created_at_ms DESC
+    """, (student_id,))
+    rows = cursor.fetchall()
+    results = []
+    for r in rows:
+        results.append({
+            "room_id": r["room_id"],
+            "student_id": r["student_id"],
+            "topic": r["topic"],
+            "overall_score": r["overall_score"],
+            "summary": r["summary"],
+            "metrics": json.loads(r["metrics_json"]) if r["metrics_json"] else {},
+            "criteria_scores": json.loads(r["criteria_scores_json"]) if r["criteria_scores_json"] else [],
+            "created_at_ms": r["created_at_ms"]
+        })
+    conn.close()
+    return results
+
+
+def update_student_name(student_id: str, name: str) -> Dict[str, Any]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    now_ms = int(time.time() * 1000)
+    cursor.execute("UPDATE students SET name = ?, updated_at_ms = ? WHERE student_id = ?", (name, now_ms, student_id))
+    conn.commit()
+    conn.close()
+    return get_or_create_student(student_id)
+
