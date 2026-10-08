@@ -1,0 +1,55 @@
+/* ==============================================================
+   GD Arena - Print Stylesheet
+   Clean light styling for PDF/Printer export
+   ============================================================== */
+
+@media print {
+  body, html {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #111827 !important;
+  }
+
+  body::before {
+    display: none !important;
+  }
+
+  nav,
+  footer,
+  aside#toast-container,
+  button,
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .btn-ghost {
+    display: none !important;
+  }
+
+  .glass-panel {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    color: #111827 !important;
+    page-break-inside: avoid;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #111827 !important;
+  }
+
+  .gradient-text {
+    -webkit-text-fill-color: #111827 !important;
+    color: #111827 !important;
+  }
+
+  p, span, div {
+    color: #1f2937 !important;
+  }
+
+  .badge {
+    background: #f3f4f6 !important;
+    border-color: #d1d5db !important;
+    color: #374151 !important;
+  }
+}

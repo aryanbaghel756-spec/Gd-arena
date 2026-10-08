@@ -110,8 +110,11 @@ if os.path.exists(os.path.join(frontend_out_dir, "_next")):
     app.mount("/_next", StaticFiles(directory=os.path.join(frontend_out_dir, "_next")), name="nextjs-assets")
 
 # Mount Vite static assets (assets) if present
+frontend_vite_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend-vite", "dist"))
 if os.path.exists(os.path.join(frontend_dist_dir, "assets")):
     app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist_dir, "assets")), name="frontend-assets")
+elif os.path.exists(os.path.join(frontend_vite_dist, "assets")):
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_vite_dist, "assets")), name="frontend-assets")
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
@@ -123,11 +126,27 @@ async def serve_index():
     if os.path.exists(dist_index):
         with open(dist_index, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
+    vite_index = os.path.join(frontend_vite_dist, "index.html")
+    if os.path.exists(vite_index):
+        with open(vite_index, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
     html_path = os.path.join(os.path.dirname(__file__), "static", "playground.html")
     if os.path.exists(html_path):
         with open(html_path, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     return HTMLResponse("<h3>GD Arena Backend is running! Open /api/health or /docs.</h3>")
+
+@app.get("/vite", response_class=HTMLResponse)
+async def serve_vite():
+    vite_index = os.path.join(frontend_vite_dist, "index.html")
+    if os.path.exists(vite_index):
+        with open(vite_index, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    dist_index = os.path.join(frontend_dist_dir, "index.html")
+    if os.path.exists(dist_index):
+        with open(dist_index, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse("<h3>Vite frontend dist not found. Run 'npm run build' in frontend-vite.</h3>")
 
 @app.get("/playground", response_class=HTMLResponse)
 async def serve_playground():
