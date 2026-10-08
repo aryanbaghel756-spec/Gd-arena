@@ -349,6 +349,10 @@ Advances the group discussion by one turn.
 ```
 *(All fields are optional when advancing AI-to-AI turns)*
 
+*Input Modalities Supported by `student_text`*:
+- **Voice / Speech (Priority)**: Captured via Web Speech Recognition (STT), passing the final transcribed sentence as `student_text`.
+- **Direct Text Input**: If the student prefers typing or microphone access is restricted, typed text is submitted identically via `student_text`. The backend processes both without distinction.
+
 - **Response**: `200 OK` (Case A: AI Speaks Next)
 ```json
 {

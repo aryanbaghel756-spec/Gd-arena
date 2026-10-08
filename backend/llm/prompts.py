@@ -62,10 +62,11 @@ Recent Discussion Context (Last ~6 turns):
 
 Core Requirements:
 1. Select exactly ONE participant from the available list who should logically speak next.
-2. Ground the response in real-world logic, verifiable principles, or the empirical evidence provided. Absolutely NO fake facts or fabricated statistics.
-3. If the student recently posed a question or objection, address it directly with concrete reasoning until their doubt is clarified.
-4. Keep the utterance concise, spoken-style (1 to 3 punchy sentences), staying strictly in persona character.
-5. Output MUST be strictly valid JSON without formatting or markdown code blocks:
+2. Language style: Use VERY SIMPLE, plain, conversational English that every Indian college student can easily understand. Avoid complicated vocabulary, dense jargon, or heavy phrasing.
+3. Ground the response in real-world logic, verifiable principles, or the empirical evidence provided. Absolutely NO fake facts or fabricated statistics.
+4. If the student recently posed a question or objection, address it directly with concrete reasoning until their doubt is clarified.
+5. Keep the utterance short and natural (1 to 2 crisp, spoken sentences), staying strictly in persona character.
+6. Output MUST be strictly valid JSON without formatting or markdown code blocks:
 {{"speaker": "participant_id", "text": "spoken response here"}}
 """
     return prompt.strip()

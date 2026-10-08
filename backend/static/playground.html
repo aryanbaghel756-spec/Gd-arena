@@ -65,8 +65,14 @@
     .turn-header { font-size: 0.75rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; display: flex; justify-content: space-between; gap: 10px; }
     .interrupted-tag { color: var(--danger); font-size: 0.7rem; font-weight: bold; }
 
-    .interaction-bar { padding: 15px 20px; background: #0f172a; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+    .interaction-container { padding: 14px 20px; background: #0f172a; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+    .voice-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
     .live-stt-text { flex: 1; font-size: 0.9rem; color: #cbd5e1; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .text-bar { display: flex; align-items: center; gap: 10px; }
+    .text-bar input { flex: 1; background: #1e293b; border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px; color: #fff; font-size: 0.9rem; }
+    .text-bar input:focus { border-color: var(--accent); outline: none; }
+    .send-btn { background: #3b82f6; padding: 10px 20px; border-radius: 8px; font-weight: 600; }
+    .send-btn:hover { background: #2563eb; }
 
     /* Report Modal */
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
@@ -151,11 +157,20 @@
     <div class="discussion-pane">
       <div class="transcript-box" id="transcriptBox"></div>
 
-      <!-- Interaction bar with Mic and Interruption -->
-      <div class="interaction-bar">
-        <div id="liveStt" class="live-stt-text">Hold or click 'Hold to Speak' to contribute...</div>
-        <button id="micBtn" class="mic-btn">🎙️ Speak (Hold/Click)</button>
-        <button id="interruptBtn" class="danger" style="display:none;">✋ Interrupt</button>
+      <!-- Dual Input: Voice Priority + Text Fallback -->
+      <div class="interaction-container">
+        <!-- Voice Priority Section -->
+        <div class="voice-bar">
+          <div id="liveStt" class="live-stt-text">💡 Voice Priority: Click 'Speak' to contribute with your microphone...</div>
+          <button id="micBtn" class="mic-btn">🎙️ Speak (Microphone)</button>
+          <button id="interruptBtn" class="danger" style="display:none;">✋ Interrupt</button>
+        </div>
+
+        <!-- Text Input Row -->
+        <div class="text-bar">
+          <input type="text" id="studentTextInput" placeholder="💬 Or type your point here and press Enter..." />
+          <button id="sendTextBtn" class="send-btn">📤 Send</button>
+        </div>
       </div>
     </div>
   </div>
@@ -230,7 +245,13 @@
     document.getElementById('liveStt').innerText = 'Web Speech STT not supported in this browser. Please type or use Chrome/Edge.';
   }
 
-  // Voice synthesis helper
+  // Voice synthesis helper with clear accent prioritization
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = () => {
+      window.speechSynthesis.getVoices();
+    };
+  }
+
   function speakTurn(text, voiceHint, onEndCallback) {
     if (!('speechSynthesis' in window)) {
       if (onEndCallback) onEndCallback();
@@ -238,19 +259,43 @@
     }
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Smooth, easily understandable conversational pace (never rushed)
+    const baseRate = voiceHint ? voiceHint.rate : 0.95;
+    utterance.rate = Math.min(0.98, Math.max(0.88, baseRate * 0.94));
     utterance.pitch = voiceHint ? voiceHint.pitch : 1.0;
-    utterance.rate = voiceHint ? voiceHint.rate : 1.0;
 
-    // Pick a browser voice matching gender hint if available
+    // Pick clean, natural voice (prefer Indian English en-IN or standard neutral English)
     const voices = window.speechSynthesis.getVoices();
-    if (voiceHint && voices.length > 0) {
-      const match = voices.find(v => 
-        (voiceHint.gender_hint === 'female' ? /female|woman|zira|susan|kavya/i.test(v.name) : /male|man|david|rishi/i.test(v.name))
-      );
-      if (match) utterance.voice = match;
+    if (voices && voices.length > 0) {
+      const isFemale = voiceHint ? voiceHint.gender_hint === 'female' : true;
+      let matchedVoice = null;
+      
+      if (isFemale) {
+        matchedVoice = voices.find(v => (v.lang === 'en-IN' || /india|heera|kavya|kalpana/i.test(v.name)) && /female|woman|heera|zira/i.test(v.name))
+          || voices.find(v => (v.lang === 'en-IN' || /india/i.test(v.name)))
+          || voices.find(v => v.lang.startsWith('en') && /natural|jenny|susan|zira|female/i.test(v.name))
+          || voices.find(v => v.lang.startsWith('en'));
+      } else {
+        matchedVoice = voices.find(v => (v.lang === 'en-IN' || /india|ravi|rishi|neerja/i.test(v.name)) && /male|man|ravi/i.test(v.name))
+          || voices.find(v => (v.lang === 'en-IN' || /india/i.test(v.name)))
+          || voices.find(v => v.lang.startsWith('en') && /natural|david|guy|george|male/i.test(v.name))
+          || voices.find(v => v.lang.startsWith('en'));
+      }
+
+      if (matchedVoice) {
+        utterance.voice = matchedVoice;
+        utterance.lang = matchedVoice.lang || 'en-US';
+      }
     }
 
     utterance.onend = () => {
+      highlightSpeaking(null);
+      document.getElementById('interruptBtn').style.display = 'none';
+      if (onEndCallback) onEndCallback();
+    };
+
+    utterance.onerror = () => {
       highlightSpeaking(null);
       document.getElementById('interruptBtn').style.display = 'none';
       if (onEndCallback) onEndCallback();
@@ -414,12 +459,12 @@
           if (data.next_actor === 'ai') {
             setTimeout(() => { advanceTurn(); }, 1200);
           } else {
-            document.getElementById('liveStt').innerText = "The floor is yours! Click 'Speak' to respond.";
+            document.getElementById('liveStt').innerText = "The floor is yours! Speak with microphone or type your point below.";
           }
         });
       } else {
         highlightSpeaking(null);
-        document.getElementById('liveStt').innerText = "The floor is open. Click 'Speak' when ready.";
+        document.getElementById('liveStt').innerText = "The floor is open. Speak with microphone or type your point below.";
       }
     } catch (err) {
       console.error('Error advancing turn:', err);
@@ -451,7 +496,7 @@
   function stopRecordingAndSend() {
     isRecording = false;
     micBtn.classList.remove('recording');
-    micBtn.innerText = '🎙️ Speak (Hold/Click)';
+    micBtn.innerText = '🎙️ Speak (Microphone)';
 
     if (recognition) {
       try { recognition.stop(); } catch (e) {}
@@ -464,6 +509,34 @@
     }
     accumulatedTranscript = '';
   }
+
+  // Dual Input: Direct Text Input Handler
+  const studentTextInput = document.getElementById('studentTextInput');
+  const sendTextBtn = document.getElementById('sendTextBtn');
+
+  function sendTypedInput() {
+    const typedText = studentTextInput.value.trim();
+    if (!typedText) return;
+
+    // If currently recording voice, stop recording cleanly
+    if (isRecording) {
+      isRecording = false;
+      micBtn.classList.remove('recording');
+      micBtn.innerText = '🎙️ Speak (Microphone)';
+      if (recognition) { try { recognition.stop(); } catch (e) {} }
+    }
+
+    studentTextInput.value = '';
+    appendBubble('student', 'You', typedText, false);
+    advanceTurn(typedText);
+  }
+
+  sendTextBtn.addEventListener('click', sendTypedInput);
+  studentTextInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      sendTypedInput();
+    }
+  });
 
   // Interruption button
   document.getElementById('interruptBtn').addEventListener('click', () => {
