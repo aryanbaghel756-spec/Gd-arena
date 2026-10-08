@@ -110,6 +110,18 @@ class TranscriptTurn(BaseModel):
     t_ms: int
     interrupted: bool = False
 
+class JoinRoomRequest(BaseModel):
+    student_id: str = Field(min_length=2, description="Unique identifier of joining friend/student")
+    student_name: str = Field(min_length=2, default="Friend")
+
+class JoinRoomResponse(BaseModel):
+    room_id: str
+    student_id: str
+    student_name: str
+    total_human_count: int
+    ai_participant_count: int
+    message: str
+
 class GetRoomResponse(BaseModel):
     room_id: str
     topic: str
@@ -121,12 +133,15 @@ class GetRoomResponse(BaseModel):
     remaining_sec: int
     moderator: Participant
     participants: List[Participant]
+    human_participants: Optional[List[Dict[str, str]]] = None
     transcript: List[TranscriptTurn]
 
 
 # --- Turn Advance ---
 class NextTurnRequest(BaseModel):
     student_text: Optional[str] = None
+    student_id: Optional[str] = None
+    student_name: Optional[str] = None
     student_started_ms: Optional[int] = None
     student_ended_ms: Optional[int] = None
     interrupted_turn_id: Optional[str] = None

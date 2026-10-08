@@ -13,7 +13,9 @@ async def advance_room_turn(
     student_text: Optional[str] = None,
     student_started_ms: Optional[int] = None,
     student_ended_ms: Optional[int] = None,
-    interrupted_turn_id: Optional[str] = None
+    interrupted_turn_id: Optional[str] = None,
+    student_id: Optional[str] = None,
+    student_name: Optional[str] = None
 ) -> NextTurnResponse:
     now_ms = int(time.time() * 1000)
     remaining_sec = room.get_remaining_sec()
@@ -93,9 +95,11 @@ async def advance_room_turn(
             room.phase = "discussion"
 
         # Record student turn
+        spk_id = student_id or "student"
+        spk_name = student_name or room.human_participants.get(spk_id, "You")
         room.add_turn(
-            speaker_id="student",
-            speaker_name="You",
+            speaker_id=spk_id,
+            speaker_name=spk_name,
             role="student",
             text=student_text.strip(),
             is_ai=False,
@@ -103,8 +107,9 @@ async def advance_room_turn(
         )
 
         # Update student profile, check if query resolved or concepts learned
+        active_sid = student_id or room.student_id
         learning_res = process_student_utterance_and_learnings(
-            student_id=room.student_id,
+            student_id=active_sid,
             topic=room.topic,
             student_text=student_text.strip()
         )

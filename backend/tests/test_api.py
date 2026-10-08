@@ -325,3 +325,40 @@ def test_create_custom_topic_endpoint():
     t1 = client.post(f"/api/rooms/{room_id}/next", json={}).json()
     assert t1["turn"] is not None
 
+def test_join_room_multi_seat_support():
+    create_res = client.post("/api/rooms", json={
+        "topic": "Will AI Create More Jobs Than It Destroys?",
+        "panel_size": 4,
+        "language": "en"
+    })
+    room_id = create_res.json()["room_id"]
+
+    # Friend joins room
+    join_res = client.post(f"/api/rooms/{room_id}/join", json={
+        "student_id": "friend_rahul_99",
+        "student_name": "Rahul"
+    })
+    assert join_res.status_code == 200
+    join_data = join_res.json()
+    assert join_data["total_human_count"] == 2
+    assert "Rahul joined room successfully" in join_data["message"]
+
+    # Verify GetRoom returns multiple human participants
+    room_info = client.get(f"/api/rooms/{room_id}").json()
+    assert len(room_info["human_participants"]) == 2
+    assert any(h["name"] == "Rahul" for h in room_info["human_participants"])
+
+    # Advance opening turn from Moderator
+    client.post(f"/api/rooms/{room_id}/next", json={})
+
+    # Advance turn from Rahul
+    client.post(f"/api/rooms/{room_id}/next", json={
+        "student_id": "friend_rahul_99",
+        "student_name": "Rahul",
+        "student_text": "I agree with Aarav on technical training."
+    })
+    
+    # Check that transcript registered Rahul
+    room_updated = client.get(f"/api/rooms/{room_id}").json()
+    assert any(turn["speaker_name"] == "Rahul" for turn in room_updated["transcript"])
+

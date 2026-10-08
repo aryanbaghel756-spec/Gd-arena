@@ -139,6 +139,14 @@
         <option value="5">5 AI + Mod</option>
       </select>
     </div>
+    <div class="control-group" style="max-width: 125px;">
+      <label>AI Patience</label>
+      <select id="patienceSelect">
+        <option value="3">3s (Fast)</option>
+        <option value="5" selected>5s (Balanced)</option>
+        <option value="8">8s (Relaxed)</option>
+      </select>
+    </div>
     <button id="startBtn">🚀 Start Discussion</button>
   </div>
 
@@ -155,6 +163,15 @@
 
     <!-- Right Column: Live Transcript & Interaction -->
     <div class="discussion-pane">
+      <!-- Accessibility: Live High-Contrast Captions & Invite Link -->
+      <div style="padding: 10px 16px; background: #0f172a; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px; flex: 1; overflow: hidden;">
+          <span style="font-size: 0.7rem; background: var(--accent); color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 800; letter-spacing: 0.5px;">LIVE CAPTIONS</span>
+          <span id="captionText" style="font-size: 0.95rem; color: #fff; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Starting session...</span>
+        </div>
+        <button id="inviteBtn" style="background: rgba(56,189,248,0.15); color: var(--accent); border: 1px solid var(--accent); font-size: 0.8rem; padding: 4px 10px; border-radius: 6px;">🔗 + Friend</button>
+      </div>
+
       <div class="transcript-box" id="transcriptBox"></div>
 
       <!-- Dual Input: Voice Priority + Text Fallback -->
@@ -356,6 +373,7 @@
     const language = document.getElementById('langSelect').value;
     const format = document.getElementById('formatSelect').value;
     const panel_size = parseInt(document.getElementById('panelSizeSelect').value);
+    const patience_sec = parseInt(document.getElementById('patienceSelect').value);
 
     document.getElementById('startBtn').disabled = true;
 
@@ -363,7 +381,7 @@
       const res = await fetch('/api/rooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, language, format, panel_size, student_id: 'student_web_live' })
+        body: JSON.stringify({ topic, language, format, panel_size, patience_sec, student_id: 'student_web_live' })
       });
       const data = await res.json();
       currentRoomId = data.room_id;
@@ -382,20 +400,34 @@
     }
   });
 
-  function renderParticipants(mod, list) {
+  function renderParticipants(mod, list, humans = null) {
     const box = document.getElementById('participantsList');
     box.innerHTML = '';
 
-    // Student card
-    box.innerHTML += `
-      <div class="participant-card" id="pcard-student">
-        <div class="p-avatar p-student">You</div>
-        <div class="p-info">
-          <div class="p-name">You</div>
-          <div class="p-role">Student Discussant</div>
+    // Humans
+    if (humans && humans.length > 0) {
+      humans.forEach(h => {
+        box.innerHTML += `
+          <div class="participant-card" id="pcard-${h.id}">
+            <div class="p-avatar p-student">${h.name[0]}</div>
+            <div class="p-info">
+              <div class="p-name">${h.name} <span class="badge" style="background:#059669;font-size:0.6rem;">HUMAN</span></div>
+              <div class="p-role">Discussant</div>
+            </div>
+          </div>
+        `;
+      });
+    } else {
+      box.innerHTML += `
+        <div class="participant-card" id="pcard-student">
+          <div class="p-avatar p-student">You</div>
+          <div class="p-info">
+            <div class="p-name">You <span class="badge" style="background:#059669;font-size:0.6rem;">HUMAN</span></div>
+            <div class="p-role">Student Discussant</div>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    }
 
     // Moderator card
     box.innerHTML += `
@@ -423,6 +455,31 @@
       `;
     });
   }
+
+  // Invite Friend (Multi-seat with AI filling empty seats)
+  document.getElementById('inviteBtn').addEventListener('click', async () => {
+    if (!currentRoomId) return;
+    const friendName = prompt("Enter your friend's name to join this discussion room:", "Rahul");
+    if (!friendName || !friendName.trim()) return;
+    const friendId = "student_" + friendName.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    try {
+      const res = await fetch(`/api/rooms/${currentRoomId}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: friendId, student_name: friendName.trim() })
+      });
+      const data = await res.json();
+      alert(`🎉 ${data.message}`);
+
+      // Refresh room participants display
+      const roomRes = await fetch(`/api/rooms/${currentRoomId}`);
+      const roomData = await roomRes.json();
+      renderParticipants(roomData.moderator, roomData.participants, roomData.human_participants);
+    } catch (err) {
+      alert('Error joining room: ' + err);
+    }
+  });
 
   // Advance turn loop
   async function advanceTurn(studentText = null, interruptedId = null) {
@@ -453,6 +510,8 @@
         const speaker = activeSpeakers[data.turn.speaker_id] || { name: data.turn.speaker_name, role: data.turn.role };
         appendBubble(data.turn.role, data.turn.speaker_name, data.turn.text, false);
         highlightSpeaking(data.turn.speaker_id);
+        const captionEl = document.getElementById('captionText');
+        if (captionEl) captionEl.innerText = `${data.turn.speaker_name}: "${data.turn.text}"`;
 
         speakTurn(data.turn.text, data.turn.voice, () => {
           // If next actor is AI, advance again

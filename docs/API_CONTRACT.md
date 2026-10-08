@@ -318,6 +318,31 @@ Returns the full state, timer info, and complete transcript for reconnects, refr
 
 ---
 
+### 3.4.1 `POST /api/rooms/{id}/join`
+Enables friends or peers to join the same discussion room. AI participants dynamically fill the remaining empty seats to maintain the target panel size.
+
+- **Method**: `POST`
+- **Request Body**:
+```json
+{
+  "student_id": "friend_rahul_99",
+  "student_name": "Rahul"
+}
+```
+- **Response**: `200 OK`
+```json
+{
+  "room_id": "room_a1b2c3d4",
+  "student_id": "friend_rahul_99",
+  "student_name": "Rahul",
+  "total_human_count": 2,
+  "ai_participant_count": 3,
+  "message": "Rahul joined room successfully. AI filled the remaining 3 empty seats."
+}
+```
+
+---
+
 ### 3.5 `POST /api/rooms/{id}/next`
 Advances the group discussion by one turn.
 

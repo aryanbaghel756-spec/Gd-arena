@@ -21,7 +21,9 @@ from .models import (
     FactsResponse,
     StudentProfileResponse,
     CustomTopicRequest,
-    CustomTopicResponse
+    CustomTopicResponse,
+    JoinRoomRequest,
+    JoinRoomResponse
 )
 from .store import room_store
 from .mock_engine import get_mock_topics, register_custom_topic, advance_mock_turn, generate_mock_report
@@ -172,6 +174,24 @@ async def get_room(id: str):
         raise HTTPException(status_code=404, detail=f"Room '{id}' was not found.")
     return room.to_get_room_response()
 
+@app.post("/api/rooms/{id}/join", response_model=JoinRoomResponse)
+async def join_room(id: str, req: JoinRoomRequest):
+    room = room_store.get_room(id)
+    if not room:
+        raise HTTPException(status_code=404, detail=f"Room '{id}' was not found.")
+    if room.phase == "ended":
+        raise HTTPException(status_code=400, detail="Cannot join a room that has already concluded.")
+
+    room.join_student(student_id=req.student_id, student_name=req.student_name)
+    return JoinRoomResponse(
+        room_id=room.room_id,
+        student_id=req.student_id,
+        student_name=req.student_name,
+        total_human_count=len(room.human_participants),
+        ai_participant_count=len(room.participants),
+        message=f"{req.student_name} joined room successfully. AI filled the remaining {len(room.participants)} empty seats."
+    )
+
 @app.post("/api/rooms/{id}/next", response_model=NextTurnResponse)
 async def advance_turn(id: str, req: NextTurnRequest):
     room = room_store.get_room(id)
@@ -187,7 +207,9 @@ async def advance_turn(id: str, req: NextTurnRequest):
             student_text=req.student_text,
             student_started_ms=req.student_started_ms,
             student_ended_ms=req.student_ended_ms,
-            interrupted_turn_id=req.interrupted_turn_id
+            interrupted_turn_id=req.interrupted_turn_id,
+            student_id=req.student_id,
+            student_name=req.student_name
         )
 
     return await advance_room_turn(
@@ -195,7 +217,9 @@ async def advance_turn(id: str, req: NextTurnRequest):
         student_text=req.student_text,
         student_started_ms=req.student_started_ms,
         student_ended_ms=req.student_ended_ms,
-        interrupted_turn_id=req.interrupted_turn_id
+        interrupted_turn_id=req.interrupted_turn_id,
+        student_id=req.student_id,
+        student_name=req.student_name
     )
 
 @app.post("/api/rooms/{id}/end", response_model=EndReportResponse)

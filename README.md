@@ -21,8 +21,12 @@ GD Arena is a voice-first AI group discussion trainer built for Problem Statemen
 - Implemented diverse GD formats: standard, case-based, abstract, controversial, and fishbowl mode.
 - Implemented natural Hindi-English (Hinglish) code-switching dialogue mode for authentic Indian campus placements.
 - Implemented 'What You Could Have Said' replay analysis in performance reports, highlighting pivotal missed openings with model responses.
-- Implemented adjustable AI patience thresholds (`patience_sec: 2-15s`) and custom topic dynamic heuristic grounding.
-- Created complete Pytest automated test suite (13/13 passing) and end-to-end evidence & memory verification runner (`scripts/run_fake_discussion.py`).
+- Implemented adjustable AI patience thresholds (`patience_sec: 2-15s`) and custom topic dynamic heuristic grounding (`POST /api/topics/custom`).
+- Implemented Multi-Seat Peer Joining (`POST /api/rooms/{id}/join`) where friends can join the same live room and AI dynamically fills the remaining empty seats.
+- Implemented Dual Input Modality: voice-priority browser STT with instant fallback to direct text typing (`student_text`).
+- Calibrated simple, conversational English personas with natural, unhurried TTS speech delivery.
+- Created live test playground (`/playground`) with real-time accessibility captions and 1-click room creation.
+- Created complete Pytest automated test suite (15/15 passing) and end-to-end evidence & memory verification runner (`scripts/run_fake_discussion.py`).
 
 ### Left
 - Frontend React UI integration (under active development in `/frontend` by teammate on second laptop against `docs/API_CONTRACT.md`).

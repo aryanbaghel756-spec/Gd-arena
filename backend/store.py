@@ -37,6 +37,13 @@ class RoomState:
         self.is_satisfied: bool = False
         self.satisfaction_notes: str = ""
         self.in_fishbowl_circle: bool = (format != "fishbowl")  # If fishbowl, starts outside circle
+        self.human_participants: Dict[str, str] = {student_id: "You"}
+
+    def join_student(self, student_id: str, student_name: str) -> None:
+        self.human_participants[student_id] = student_name
+        # Multi-seat balance: AI fills remaining seats
+        remaining_ai_seats = max(2, self.panel_size - len(self.human_participants) + 1)
+        self.participants = get_selected_participants(remaining_ai_seats)
 
     def get_remaining_sec(self) -> int:
         elapsed = (time.time() * 1000 - self.created_at_ms) / 1000.0
@@ -118,6 +125,7 @@ class RoomState:
             remaining_sec=self.get_remaining_sec(),
             moderator=self.moderator,
             participants=self.participants,
+            human_participants=[{"id": sid, "name": sname} for sid, sname in self.human_participants.items()],
             transcript=self.transcript
         )
 

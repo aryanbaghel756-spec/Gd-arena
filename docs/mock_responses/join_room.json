@@ -1,0 +1,8 @@
+{
+  "room_id": "room_a1b2c3d4",
+  "student_id": "friend_rahul_99",
+  "student_name": "Rahul",
+  "total_human_count": 2,
+  "ai_participant_count": 3,
+  "message": "Rahul joined room successfully. AI filled the remaining 3 empty seats."
+}
