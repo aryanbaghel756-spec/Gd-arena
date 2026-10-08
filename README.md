@@ -10,23 +10,22 @@ GD Arena is a voice-first AI group discussion trainer built for Problem Statemen
 ### Done
 - Formalized complete API contract specification (`docs/API_CONTRACT.md`) and mock JSON payloads (`docs/mock_responses/*.json`).
 - Configured repository structure with `.gitignore`, `backend/.env.example`, and `frontend/.env.example`.
-- Designed multi-provider LLM abstraction architecture (Ollama, Groq, Gemini) with graceful degradation.
-- Defined persona profiles (Aarav, Meera, Kabir, Ananya, Rohan, and Dr. Verma Moderator) with voice synthesis hints.
+- Designed and implemented multi-provider LLM abstraction architecture (Ollama, Groq, Gemini) with automatic fallback and graceful degradation.
+- Implemented 5 AI Personas (Aarav, Meera, Kabir, Ananya, Rohan) and Dr. Verma Moderator with voice synthesis parameters.
+- Implemented FastAPI backend application (`backend/main.py`) with full CORS support and standardized error formatting `{"error": {"code", "message"}}`.
+- Built in-memory room, turn, and transcript management store with interruption handling and inactivity nudges.
+- Built deterministic analytics engine computing speaking share percentages and word counts in code.
+- Built GD performance feedback report generator with strict programmatic transcript quote validation.
+- Created complete Pytest automated test suite (8/8 passing) and end-to-end fake discussion simulation runner (`scripts/run_fake_discussion.py`).
 
 ### Left
-- FastAPI backend application implementation (`backend/main.py` and routers).
-- In-memory / SQLite room and transcript persistence.
-- Single-call LLM turn generation engine and moderator state machine.
-- Speaking share and word count analytics engine.
-- LLM qualitative evaluation with strict transcript quote verification.
-- Automated pytests and end-to-end discussion simulation script.
+- Frontend React UI integration (under active development in `/frontend` by teammate on second laptop against `docs/API_CONTRACT.md`).
+- Production deployment setup (Docker / Cloud deployment).
 
 ### Plan
-1. **Phase 1**: Contract & Mock Mode FastAPI backend with CORS.
-2. **Phase 2**: Real LLM turn engine supporting switchable providers with automatic fallback.
-3. **Phase 3**: Moderator state machine, timer tracking, interruption handling, and inactivity nudges.
-4. **Phase 4**: Feedback report generator with deterministic metrics and verified transcript quotes.
-5. **Phase 5**: Pytest suite and simulation script for verification.
+1. Support frontend team with API contract updates and mock payload extensions.
+2. Conduct live microphone/browser STT and SpeechSynthesis end-to-end verification.
+3. Deploy backend service to public cloud hosting.
 
 ---
 
