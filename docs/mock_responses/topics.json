@@ -1,0 +1,28 @@
+{
+  "topics": [
+    {
+      "id": "ai-jobs",
+      "title": "Will AI Create More Jobs Than It Destroys?",
+      "category": "Technology & Economy",
+      "difficulty": "Medium",
+      "suggested_duration_sec": 300,
+      "context": "Debate whether rapid AI automation will cause permanent unemployment or lead to high-value job creation."
+    },
+    {
+      "id": "remote-work",
+      "title": "Remote Work vs. Return to Office: The Future of Collaboration",
+      "category": "Workplace & Society",
+      "difficulty": "Easy",
+      "suggested_duration_sec": 300,
+      "context": "Examine productivity, work-life balance, corporate culture, and mentorship."
+    },
+    {
+      "id": "social-media-regulation",
+      "title": "Should Social Media Algorithms Be Strictly Regulated by Government?",
+      "category": "Ethics & Policy",
+      "difficulty": "Hard",
+      "suggested_duration_sec": 300,
+      "context": "Discuss freedom of speech, mental health, algorithmic bias, and state control."
+    }
+  ]
+}

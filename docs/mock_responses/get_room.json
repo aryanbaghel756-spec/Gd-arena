@@ -1,0 +1,71 @@
+{
+  "room_id": "room_a1b2c3d4",
+  "topic": "Will AI Create More Jobs Than It Destroys?",
+  "language": "en",
+  "phase": "discussion",
+  "duration_sec": 300,
+  "remaining_sec": 215,
+  "moderator": {
+    "id": "moderator",
+    "name": "Dr. Verma",
+    "role": "moderator",
+    "is_ai": true,
+    "voice": {
+      "gender_hint": "female",
+      "pitch": 1.0,
+      "rate": 1.0
+    }
+  },
+  "participants": [
+    {
+      "id": "aarav",
+      "name": "Aarav",
+      "persona": "Analyst (logical, fact-focused, data-driven)",
+      "is_ai": true,
+      "voice": { "gender_hint": "male", "pitch": 0.95, "rate": 1.05 }
+    },
+    {
+      "id": "meera",
+      "name": "Meera",
+      "persona": "Creative (innovative, big-picture, unconventional solutions)",
+      "is_ai": true,
+      "voice": { "gender_hint": "female", "pitch": 1.1, "rate": 1.0 }
+    },
+    {
+      "id": "kabir",
+      "name": "Kabir",
+      "persona": "Critic (skeptical, challenges assumptions, finds flaws)",
+      "is_ai": true,
+      "voice": { "gender_hint": "male", "pitch": 0.9, "rate": 0.95 }
+    },
+    {
+      "id": "ananya",
+      "name": "Ananya",
+      "persona": "Collaborator (balanced, supportive, synthesizes common ground)",
+      "is_ai": true,
+      "voice": { "gender_hint": "female", "pitch": 1.05, "rate": 1.0 }
+    }
+  ],
+  "transcript": [
+    {
+      "id": "turn_1",
+      "speaker_id": "moderator",
+      "speaker_name": "Dr. Verma",
+      "role": "moderator",
+      "is_ai": true,
+      "text": "Welcome everyone to today's group discussion on 'Will AI Create More Jobs Than It Destroys?'. The floor is now open. Who would like to initiate?",
+      "t_ms": 1728374001000,
+      "interrupted": false
+    },
+    {
+      "id": "turn_2",
+      "speaker_id": "student",
+      "speaker_name": "You",
+      "role": "student",
+      "is_ai": false,
+      "text": "I would like to start. Looking back at history, industrial revolutions always created far more jobs than they displaced.",
+      "t_ms": 1728374015000,
+      "interrupted": false
+    }
+  ]
+}

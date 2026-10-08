@@ -1,0 +1,8 @@
+{
+  "turn": null,
+  "next_actor": "student",
+  "phase": "discussion",
+  "remaining_sec": 140,
+  "nudge": "The discussion has slowed down. Consider addressing Kabir's point regarding reskilling displaced workers.",
+  "degraded": false
+}

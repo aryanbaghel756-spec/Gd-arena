@@ -1,0 +1,81 @@
+{
+  "room_id": "room_a1b2c3d4",
+  "topic": "Will AI Create More Jobs Than It Destroys?",
+  "duration_sec": 300,
+  "total_turns": 14,
+  "overall_score": 78,
+  "summary": "You demonstrated strong initiative by opening the discussion with an apt historical parallel. Your points were logical, though you could engage more directly with counter-arguments raised by Kabir.",
+  "metrics": {
+    "speaking_share_pct": {
+      "student": 28.5,
+      "aarav": 22.0,
+      "meera": 18.2,
+      "kabir": 20.1,
+      "moderator": 11.2
+    },
+    "word_counts": {
+      "student": 194,
+      "aarav": 150,
+      "meera": 124,
+      "kabir": 137,
+      "moderator": 76
+    },
+    "student_interruptions_count": 1
+  },
+  "criteria_scores": [
+    {
+      "criterion": "Starting the discussion",
+      "score": 5,
+      "feedback": "Took the lead right after the moderator's opening prompt, setting a constructive tone.",
+      "quote": {
+        "turn_id": "turn_2",
+        "text": "I would like to start. Looking back at history, industrial revolutions always created far more jobs than they displaced."
+      }
+    },
+    {
+      "criterion": "Idea quality",
+      "score": 4,
+      "feedback": "Highlighted the critical difference between manual automation and cognitive displacement.",
+      "quote": {
+        "turn_id": "turn_4",
+        "text": "While that's true, modern AI displaces cognitive skills, not just repetitive manual labor."
+      }
+    },
+    {
+      "criterion": "Building on others",
+      "score": 3,
+      "feedback": "Acknowledged Aarav's data point but could have explicitly tied your point to Meera's creative solutions.",
+      "quote": {
+        "turn_id": "turn_6",
+        "text": "Building on what Aarav mentioned about IT sector growth, we also have to look at regional impact."
+      }
+    },
+    {
+      "criterion": "Listening",
+      "score": 4,
+      "feedback": "Attentive listener; did not speak over colleagues except for one purposeful intervention.",
+      "quote": {
+        "turn_id": "turn_6",
+        "text": "Building on what Aarav mentioned about IT sector growth, we also have to look at regional impact."
+      }
+    },
+    {
+      "criterion": "Handling interruptions",
+      "score": 4,
+      "feedback": "Handled Kabir's interjection smoothly and maintained your composure.",
+      "quote": {
+        "turn_id": "turn_8",
+        "text": "I understand your concern Kabir, but retraining programs can be subsidized by tech tax."
+      }
+    },
+    {
+      "criterion": "Ending strongly",
+      "score": 4,
+      "feedback": "Delivered a balanced concluding remark synthesizing technology and human adaptability.",
+      "quote": {
+        "turn_id": "turn_12",
+        "text": "In conclusion, AI will transform employment rather than eliminate it, provided governments invest heavily in reskilling."
+      }
+    }
+  ]
+}

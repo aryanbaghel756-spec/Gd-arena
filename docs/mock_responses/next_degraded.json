@@ -1,0 +1,20 @@
+{
+  "turn": {
+    "id": "turn_5",
+    "speaker_id": "moderator",
+    "speaker_name": "Dr. Verma",
+    "role": "moderator",
+    "text": "Let us maintain our momentum. What are your perspectives on the workforce transition timeframe?",
+    "t_ms": 1728374045000,
+    "voice": {
+      "gender_hint": "female",
+      "pitch": 1.0,
+      "rate": 1.0
+    }
+  },
+  "next_actor": "student",
+  "phase": "discussion",
+  "remaining_sec": 130,
+  "nudge": null,
+  "degraded": true
+}

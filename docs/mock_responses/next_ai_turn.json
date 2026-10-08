@@ -1,0 +1,20 @@
+{
+  "turn": {
+    "id": "turn_4",
+    "speaker_id": "kabir",
+    "speaker_name": "Kabir",
+    "role": "participant",
+    "text": "While that sounds promising, what about the short-term disruption for blue-collar and knowledge workers who cannot easily reskill within months?",
+    "t_ms": 1728374040000,
+    "voice": {
+      "gender_hint": "male",
+      "pitch": 0.9,
+      "rate": 0.95
+    }
+  },
+  "next_actor": "ai",
+  "phase": "discussion",
+  "remaining_sec": 195,
+  "nudge": null,
+  "degraded": false
+}

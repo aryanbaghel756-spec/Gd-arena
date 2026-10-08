@@ -1,0 +1,64 @@
+{
+  "room_id": "room_a1b2c3d4",
+  "topic": "Will AI Create More Jobs Than It Destroys?",
+  "language": "en",
+  "duration_sec": 300,
+  "created_at_ms": 1728374000000,
+  "moderator": {
+    "id": "moderator",
+    "name": "Dr. Verma",
+    "role": "moderator",
+    "is_ai": true,
+    "voice": {
+      "gender_hint": "female",
+      "pitch": 1.0,
+      "rate": 1.0
+    }
+  },
+  "participants": [
+    {
+      "id": "aarav",
+      "name": "Aarav",
+      "persona": "Analyst (logical, fact-focused, data-driven)",
+      "is_ai": true,
+      "voice": {
+        "gender_hint": "male",
+        "pitch": 0.95,
+        "rate": 1.05
+      }
+    },
+    {
+      "id": "meera",
+      "name": "Meera",
+      "persona": "Creative (innovative, big-picture, unconventional solutions)",
+      "is_ai": true,
+      "voice": {
+        "gender_hint": "female",
+        "pitch": 1.1,
+        "rate": 1.0
+      }
+    },
+    {
+      "id": "kabir",
+      "name": "Kabir",
+      "persona": "Critic (skeptical, challenges assumptions, finds flaws)",
+      "is_ai": true,
+      "voice": {
+        "gender_hint": "male",
+        "pitch": 0.9,
+        "rate": 0.95
+      }
+    },
+    {
+      "id": "ananya",
+      "name": "Ananya",
+      "persona": "Collaborator (balanced, supportive, synthesizes common ground)",
+      "is_ai": true,
+      "voice": {
+        "gender_hint": "female",
+        "pitch": 1.05,
+        "rate": 1.0
+      }
+    }
+  ]
+}

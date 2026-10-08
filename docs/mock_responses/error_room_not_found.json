@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "ROOM_NOT_FOUND",
+    "message": "Room 'room_xyz123' does not exist."
+  }
+}

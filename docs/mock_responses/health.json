@@ -1,0 +1,7 @@
+{
+  "status": "healthy",
+  "mock_mode": true,
+  "provider": "ollama",
+  "active_providers": ["ollama", "groq", "gemini"],
+  "timestamp": "2026-10-08T11:45:00Z"
+}
