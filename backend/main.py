@@ -99,16 +99,34 @@ async def general_exception_handler(request: Request, exc: Exception):
         }
     )
 
-# --- Endpoints ---
+from fastapi.staticfiles import StaticFiles
+
+# --- Static Assets & Frontend Mounting ---
+frontend_dist_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
+if os.path.exists(frontend_dist_dir):
+    assets_dir = os.path.join(frontend_dist_dir, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="frontend-assets")
 
 @app.get("/", response_class=HTMLResponse)
+async def serve_index():
+    dist_index = os.path.join(frontend_dist_dir, "index.html")
+    if os.path.exists(dist_index):
+        with open(dist_index, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    html_path = os.path.join(os.path.dirname(__file__), "static", "playground.html")
+    if os.path.exists(html_path):
+        with open(html_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse("<h3>GD Arena Backend is running! Open /api/health or /docs.</h3>")
+
 @app.get("/playground", response_class=HTMLResponse)
 async def serve_playground():
     html_path = os.path.join(os.path.dirname(__file__), "static", "playground.html")
     if os.path.exists(html_path):
         with open(html_path, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
-    return HTMLResponse("<h3>GD Arena Backend is running! Open /api/health or /docs.</h3>")
+    return HTMLResponse("<h3>GD Arena Playground</h3>")
 
 @app.get("/api/health", response_model=HealthResponse)
 async def health_check():
