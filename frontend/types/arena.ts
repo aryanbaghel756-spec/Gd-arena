@@ -79,3 +79,22 @@ export interface GDReport {
   participationShare: ParticipationShare[];
   skills: SkillScore[];
 }
+
+export interface FactDataPoint {
+  claim: string;
+  evidence: string;
+  source: string;
+}
+
+export interface MythDebunk {
+  myth: string;
+  reality: string;
+}
+
+export interface TopicFacts {
+  topic: string;
+  core_domains: string[];
+  verified_data_points: FactDataPoint[];
+  common_myths_debunked: MythDebunk[];
+}
+

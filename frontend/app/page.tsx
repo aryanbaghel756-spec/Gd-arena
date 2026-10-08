@@ -18,6 +18,7 @@ export default function Home() {
     setScreen,
     selectedTopic,
     setSelectedTopic,
+    topicFacts,
     panelSize,
     setPanelSize,
     discussionMinutes,
@@ -138,6 +139,7 @@ export default function Home() {
                 topic={selectedTopic}
                 participants={participants}
                 transcripts={transcripts}
+                topicFacts={topicFacts}
                 activeSpeakerId={activeSpeakerId}
                 phase={phase}
                 remainingSeconds={remainingSeconds}

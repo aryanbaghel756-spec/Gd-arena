@@ -36,6 +36,8 @@ interface ControlDockProps {
   micError: string | null;
   onRetryMic: () => void;
   onSubmitTypedSpeech?: (text: string) => void;
+  adoptedText?: string | null;
+  onAdoptedTextHandled?: () => void;
 }
 
 export function ControlDock({
@@ -54,9 +56,20 @@ export function ControlDock({
   micError,
   onRetryMic,
   onSubmitTypedSpeech,
+  adoptedText,
+  onAdoptedTextHandled,
 }: ControlDockProps) {
   const [isTypeInsteadOpen, setIsTypeInsteadOpen] = useState(false);
   const [typedMessage, setTypedMessage] = useState('');
+
+  // Auto-fill and open drawer when a prompt is adopted from Co-Pilot HUD
+  useEffect(() => {
+    if (adoptedText && adoptedText.trim()) {
+      setTypedMessage(adoptedText.trim());
+      setIsTypeInsteadOpen(true);
+      if (onAdoptedTextHandled) onAdoptedTextHandled();
+    }
+  }, [adoptedText, onAdoptedTextHandled]);
 
   // Keyboard shortcut listener: Space for push-to-talk, M for toggle, I for interrupt
   useEffect(() => {

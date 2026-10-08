@@ -207,6 +207,12 @@ def test_verified_facts_endpoint():
     assert any("World Economic Forum" in dp["evidence"] or "Historical" in dp["claim"] for dp in facts["verified_data_points"])
     assert "common_myths_debunked" in facts
 
+    # Direct topic facts endpoint
+    direct_res = client.get("/api/facts?topic=Stock Market & Nifty 50: Long-Term Wealth Creation or Pure Speculation?")
+    assert direct_res.status_code == 200
+    direct_facts = direct_res.json()
+    assert any("SEBI" in dp["source"] or "SEBI" in dp["evidence"] for dp in direct_facts["verified_data_points"])
+
 def test_student_satisfaction_and_memory():
     # 1. Check profile initial state
     profile_res = client.get("/api/students/student_persistent_test/profile")

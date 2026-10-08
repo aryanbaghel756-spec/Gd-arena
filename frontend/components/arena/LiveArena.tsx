@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Topic, Participant, TranscriptItem, DiscussionPhase } from '@/types/arena';
+import { Topic, Participant, TranscriptItem, DiscussionPhase, TopicFacts } from '@/types/arena';
 import { RoomTable } from './RoomTable';
 import { TranscriptPanel } from './TranscriptPanel';
 import { ControlDock } from './ControlDock';
+import { CoPilotHUD } from './CoPilotHUD';
 import { Clock, ShieldAlert, Sparkles, MessageSquare, Volume2, ArrowLeft } from 'lucide-react';
 import { RectButton } from '../ui/RectButton';
 
@@ -12,6 +13,7 @@ interface LiveArenaProps {
   topic: Topic;
   participants: Participant[];
   transcripts: TranscriptItem[];
+  topicFacts?: TopicFacts | null;
   activeSpeakerId: string | null;
   phase: DiscussionPhase;
   remainingSeconds: number;
@@ -37,6 +39,7 @@ export function LiveArena({
   topic,
   participants,
   transcripts,
+  topicFacts,
   activeSpeakerId,
   phase,
   remainingSeconds,
@@ -59,6 +62,8 @@ export function LiveArena({
 }: LiveArenaProps) {
   const [showCaptions, setShowCaptions] = useState(true);
   const [showMobileTranscript, setShowMobileTranscript] = useState(false);
+  const [showCoPilotHUD, setShowCoPilotHUD] = useState(true);
+  const [adoptedPrompt, setAdoptedPrompt] = useState<string | null>(null);
 
   // Format seconds to MM:SS
   const mins = Math.floor(remainingSeconds / 60);
@@ -145,8 +150,22 @@ export function LiveArena({
           </div>
         </div>
 
-        {/* Right: Phase Pill & Mobile Transcript Toggle */}
+        {/* Right: Phase Pill, Co-Pilot Toggle & Mobile Transcript Toggle */}
         <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+          {/* AI Co-Pilot HUD Toggle Pill */}
+          <button
+            onClick={() => setShowCoPilotHUD(!showCoPilotHUD)}
+            className={`px-3 py-1.5 rounded-full border text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all ${
+              showCoPilotHUD
+                ? 'bg-[#ff1e2d]/25 text-[#ffc400] border-[#ff1e2d]/60 shadow-[0_0_15px_rgba(255,30,45,0.4)]'
+                : 'bg-[#180d16] text-zinc-400 border-zinc-700/50 hover:text-white'
+            }`}
+            title="Toggle Live AI Co-Pilot HUD"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#ffc400]" />
+            <span>Co-Pilot {showCoPilotHUD ? 'ON' : 'OFF'}</span>
+          </button>
+
           <div className={`px-3 py-1.5 rounded-full border text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 ${currentPhaseInfo.color}`}>
             <span className="w-2 h-2 rounded-full bg-current animate-ping" />
             <span>{currentPhaseInfo.label}</span>
@@ -177,8 +196,23 @@ export function LiveArena({
             />
           </div>
 
+          {/* LIVE AI CO-PILOT HUD / REAL-TIME WHISPER COACH */}
+          {showCoPilotHUD && (
+            <div className="w-full mt-5">
+              <CoPilotHUD
+                topic={topic}
+                phase={phase}
+                activeSpeakerId={activeSpeakerId}
+                participants={participants}
+                transcripts={transcripts}
+                topicFacts={topicFacts}
+                onAdoptPrompt={(promptText) => setAdoptedPrompt(promptText)}
+              />
+            </div>
+          )}
+
           {/* DOCKED CONTROL DOCK UNDER THE TABLE */}
-          <div className="w-full mt-6">
+          <div className="w-full mt-5">
             <ControlDock
               isHoldingSpeak={isHoldingSpeak}
               onHoldSpeakStart={onHoldSpeakStart}
@@ -195,6 +229,8 @@ export function LiveArena({
               micError={micError}
               onRetryMic={onRetryMic}
               onSubmitTypedSpeech={onSubmitTypedSpeech}
+              adoptedText={adoptedPrompt}
+              onAdoptedTextHandled={() => setAdoptedPrompt(null)}
             />
           </div>
         </div>

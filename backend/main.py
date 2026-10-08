@@ -278,6 +278,16 @@ async def get_room_facts(id: str):
         common_myths_debunked=facts.get("common_myths_debunked", [])
     )
 
+@app.get("/api/facts", response_model=FactsResponse)
+async def get_topic_facts(topic: str = "Will AI Create More Jobs Than It Destroys?"):
+    facts = get_facts_for_topic(topic)
+    return FactsResponse(
+        topic=topic,
+        core_domains=facts.get("core_domains", []),
+        verified_data_points=facts.get("verified_data_points", []),
+        common_myths_debunked=facts.get("common_myths_debunked", [])
+    )
+
 @app.post("/api/rooms/{id}/satisfaction", response_model=SatisfactionResponse)
 async def mark_satisfaction(id: str, req: SatisfactionRequest):
     room = room_store.get_room(id)

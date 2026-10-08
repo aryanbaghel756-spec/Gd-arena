@@ -8,13 +8,15 @@ import {
   DiscussionPhase, 
   GDReport,
   SkillScore,
-  ParticipationShare
+  ParticipationShare,
+  TopicFacts
 } from '@/types/arena';
 import { 
   TOPIC_PRESETS, 
   MOCK_PARTICIPANTS, 
   INITIAL_TRANSCRIPTS, 
-  MOCK_REPORT_DATA 
+  MOCK_REPORT_DATA,
+  VERIFIED_TOPIC_FACTS
 } from '@/data/mockData';
 
 export type ScreenState = 'hero' | 'setup' | 'arena' | 'report';
@@ -27,6 +29,7 @@ export function useGDSimulator() {
   const [screen, setScreen] = useState<ScreenState>('hero');
   const [selectedTopic, setSelectedTopic] = useState<Topic>(TOPIC_PRESETS[0]);
   const [availableTopics, setAvailableTopics] = useState<Topic[]>(TOPIC_PRESETS);
+  const [topicFacts, setTopicFacts] = useState<TopicFacts | null>(null);
   const [panelSize, setPanelSize] = useState<number>(4);
   const [discussionMinutes, setDiscussionMinutes] = useState<number>(8);
 
@@ -100,6 +103,28 @@ export function useGDSimulator() {
         console.warn('Backend topics fetch failed, using built-in presets:', err);
       });
   }, []);
+
+  // 1.5. Fetch Verified Facts for Selected Topic
+  useEffect(() => {
+    if (!selectedTopic) return;
+    const fallback = Object.values(VERIFIED_TOPIC_FACTS).find(
+      (f) =>
+        selectedTopic.title.toLowerCase().includes(f.topic.toLowerCase().slice(0, 20)) ||
+        f.topic.toLowerCase().includes(selectedTopic.title.toLowerCase().slice(0, 20))
+    );
+    if (fallback) {
+      setTopicFacts(fallback);
+    }
+
+    fetch(`${API_BASE}/api/facts?topic=${encodeURIComponent(selectedTopic.title)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && data.verified_data_points && data.verified_data_points.length > 0) {
+          setTopicFacts(data);
+        }
+      })
+      .catch(() => {});
+  }, [selectedTopic]);
 
   // 2. Speech Recognition Initialization
   useEffect(() => {
@@ -577,6 +602,7 @@ export function useGDSimulator() {
     setScreen,
     selectedTopic,
     setSelectedTopic,
+    topicFacts,
     panelSize,
     setPanelSize,
     discussionMinutes,
